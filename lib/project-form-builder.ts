@@ -5,7 +5,7 @@ import type {
   TrackableFormSnapshot,
 } from "@/db/schema/types"
 
-const fieldKindSchema = z.enum(["rating", "checkboxes", "notes"])
+const fieldKindSchema = z.enum(["rating", "checkboxes", "notes", "short_text"])
 
 const ratingFieldConfigSchema = z.object({
   kind: z.literal("rating"),
@@ -66,10 +66,17 @@ const notesFieldConfigSchema = z.object({
   maxLength: z.int().min(1).max(5000).optional(),
 })
 
+const shortTextFieldConfigSchema = z.object({
+  kind: z.literal("short_text"),
+  placeholder: z.string().trim().max(160).optional(),
+  maxLength: z.int().min(1).max(500).optional(),
+})
+
 const formFieldConfigSchema = z.discriminatedUnion("kind", [
   ratingFieldConfigSchema,
   checkboxesFieldConfigSchema,
   notesFieldConfigSchema,
+  shortTextFieldConfigSchema,
 ])
 
 export const editableTrackableFormFieldSchema = z
@@ -214,6 +221,21 @@ export function createDefaultEditableField(
           kind,
           placeholder: "Share more detail...",
           maxLength: 500,
+        },
+      }
+    case "short_text":
+      return {
+        id,
+        key: createFieldKey("short_text", position),
+        kind,
+        label: "Short text",
+        description: "Collect a short written response.",
+        required: false,
+        position,
+        config: {
+          kind,
+          placeholder: "Type your answer...",
+          maxLength: 120,
         },
       }
   }

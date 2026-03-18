@@ -1,20 +1,17 @@
-import { auth } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
+import { ProjectPageClient } from "./project-page-client"
 
-import { ProjectContent } from "./project-content"
+export const dynamic = "force-static"
+
+export function generateStaticParams() {
+  return []
+}
 
 export default async function ProjectPage({
   params,
 }: {
-  params: { id: string } | Promise<{ id: string }>
+  params: Promise<{ id: string }>
 }) {
-  const { userId } = await auth()
+  const resolvedParams = await params
 
-  if (!userId) {
-    redirect("/sign-in")
-  }
-
-  const resolvedParams = await Promise.resolve(params)
-
-  return <ProjectContent projectId={resolvedParams.id} />
+  return <ProjectPageClient projectId={resolvedParams.id} />
 }

@@ -21,6 +21,7 @@ export const trackableFormFieldKindEnum = pgEnum("trackable_form_field_kind", [
   "rating",
   "checkboxes",
   "notes",
+  "short_text",
 ])
 
 export const trackableSubmissionSourceEnum = pgEnum(

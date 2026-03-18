@@ -1,7 +1,7 @@
 "use client"
 
 import type { ColumnDef } from "@tanstack/react-table"
-import { Copy, Trash2 } from "lucide-react"
+import { Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
@@ -10,18 +10,12 @@ import { formatDateTime, formatStatusLabel } from "./display-utils"
 import type { ApiKeyRow } from "./table-types"
 
 type ApiKeyColumnsOptions = {
-  copiedKeyId?: string | null
-  onCopy: (apiKey: ApiKeyRow) => void | Promise<void>
   onRevoke: (apiKey: ApiKeyRow) => void
-  plaintextKeysById: Record<string, string>
   revokingKeyId?: string | null
 }
 
 export function getApiKeyColumns({
-  copiedKeyId,
-  onCopy,
   onRevoke,
-  plaintextKeysById,
   revokingKeyId,
 }: ApiKeyColumnsOptions): ColumnDef<ApiKeyRow>[] {
   return [
@@ -114,27 +108,10 @@ export function getApiKeyColumns({
       header: () => <div className="pr-4 text-right">Actions</div>,
       cell: ({ row }) => {
         const apiKey = row.original
-        const canCopy = Boolean(plaintextKeysById[apiKey.id])
-        const isCopied = copiedKeyId === apiKey.id
         const isRevoking = revokingKeyId === apiKey.id
 
         return (
           <div className="flex justify-end gap-1 pr-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              title={
-                canCopy
-                  ? isCopied
-                    ? "Copied"
-                    : "Copy API key"
-                  : "Full API keys are only available immediately after creation."
-              }
-              className="size-8 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              onClick={() => void onCopy(apiKey)}
-            >
-              <Copy className="size-4" />
-            </Button>
             <Button
               variant="ghost"
               size="icon"

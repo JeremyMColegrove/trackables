@@ -1,6 +1,7 @@
 export * from "@/db/schema/_shared"
 export * from "@/db/schema/api-usage"
 export * from "@/db/schema/enums"
+export * from "@/db/schema/team"
 export * from "@/db/schema/trackables"
 export * from "@/db/schema/types"
 export * from "@/db/schema/users"
@@ -8,6 +9,7 @@ export * from "@/db/schema/users"
 import { InferInsertModel, InferSelectModel } from "drizzle-orm"
 
 import { apiKeys, trackableApiUsageEvents } from "@/db/schema/api-usage"
+import { workspaceTeamMembers } from "@/db/schema/team"
 import {
   trackableAccessGrants,
   trackableFormAnswers,
@@ -21,6 +23,9 @@ import { users } from "@/db/schema/users"
 
 export type User = InferSelectModel<typeof users>
 export type NewUser = InferInsertModel<typeof users>
+
+export type WorkspaceTeamMember = InferSelectModel<typeof workspaceTeamMembers>
+export type NewWorkspaceTeamMember = InferInsertModel<typeof workspaceTeamMembers>
 
 export type TrackableItem = InferSelectModel<typeof trackableItems>
 export type NewTrackableItem = InferInsertModel<typeof trackableItems>

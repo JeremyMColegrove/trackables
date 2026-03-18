@@ -40,7 +40,8 @@ import {
   hashApiKey,
   resolveApiKeyExpiration,
 } from "@/server/api-keys"
-import type { UsageEventMetadata, UsageEventPayload } from "@/db/schema/types"
+import { assertProjectAccess } from "@/server/project-access"
+import type { UsageEventPayload } from "@/db/schema/types"
 
 const accessRoleSchema = z.enum(["submit", "view", "manage"])
 
@@ -59,33 +60,11 @@ function generateSlug(name: string) {
   return `${baseSlug}-${randomSuffix}`
 }
 
-async function assertProjectOwner(projectId: string, userId: string) {
-  const project = await db.query.trackableItems.findFirst({
-    where: (table, { and, eq }) =>
-      and(eq(table.id, projectId), eq(table.ownerId, userId)),
-    columns: {
-      id: true,
-    },
-  })
-
-  if (!project) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: "Project not found.",
-    })
-  }
-
-  return project
-}
-
 function createShareToken() {
   return randomBytes(18).toString("base64url")
 }
 
-function extractUsageEventName(
-  payload: UsageEventPayload,
-  metadata: UsageEventMetadata | null
-) {
+function extractUsageEventName(payload: UsageEventPayload) {
   const candidateKeys = [
     "name",
     "clientName",
@@ -100,11 +79,6 @@ function extractUsageEventName(
     if (typeof payloadValue === "string" && payloadValue.trim().length > 0) {
       return payloadValue.trim()
     }
-  }
-
-  const metadataSource = metadata?.requestSource
-  if (typeof metadataSource === "string" && metadataSource.trim().length > 0) {
-    return metadataSource.trim()
   }
 
   return "Unnamed"
@@ -124,9 +98,10 @@ export const projectsRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
+      await assertProjectAccess(input.id, userId, "view")
+
       const project = await db.query.trackableItems.findFirst({
-        where: (table, { and, eq }) =>
-          and(eq(table.id, input.id), eq(table.ownerId, userId)),
+        where: eq(trackableItems.id, input.id),
         with: {
           activeForm: {
             with: {
@@ -186,10 +161,7 @@ export const projectsRouter = createTRPCRouter({
             },
           }),
           db.query.apiKeys.findMany({
-            where: and(
-              eq(apiKeys.ownerId, userId),
-              eq(apiKeys.projectId, project.id)
-            ),
+            where: eq(apiKeys.projectId, project.id),
             orderBy: [desc(apiKeys.createdAt)],
           }),
           db
@@ -235,7 +207,7 @@ export const projectsRouter = createTRPCRouter({
               name: event.apiKey.name,
               maskedKey: `${event.apiKey.keyPrefix}...${event.apiKey.lastFour}`,
             }
-            const name = extractUsageEventName(event.payload, event.metadata)
+            const name = extractUsageEventName(event.payload)
             const groupKey = `${apiKey.id}:${name.toLowerCase()}`
             const existingGroup = groups.get(groupKey)
             const occurredAt = event.occurredAt.toISOString()
@@ -360,7 +332,7 @@ export const projectsRouter = createTRPCRouter({
         token: z.string().trim().min(1),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const shareLink = await getActiveShareLink(input.token)
 
       if (!shareLink) {
@@ -388,6 +360,9 @@ export const projectsRouter = createTRPCRouter({
         })
       }
 
+      const requiresAuthentication =
+        requiresAuthenticatedSharedFormAccess(settings)
+
       return {
         project: {
           id: shareLink.trackable.id,
@@ -411,6 +386,17 @@ export const projectsRouter = createTRPCRouter({
         settings: {
           allowAnonymousSubmissions: settings?.allowAnonymousSubmissions ?? true,
           collectResponderEmail: settings?.collectResponderEmail ?? false,
+          requiresAuthentication,
+        },
+        viewer: {
+          isAuthenticated: Boolean(ctx.auth.userId),
+          hasSubmitted:
+            ctx.auth.userId == null
+              ? false
+              : await hasAuthenticatedSharedFormSubmission({
+                  shareLinkId: shareLink.id,
+                  userId: ctx.auth.userId,
+                }),
         },
       }
     }),
@@ -570,16 +556,17 @@ export const projectsRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      const project = await db.query.trackableItems.findFirst({
-        where: (table, { and, eq }) =>
-          and(eq(table.id, input.projectId), eq(table.ownerId, userId)),
+      const project = await assertProjectAccess(input.projectId, userId, "manage")
+
+      const projectRecord = await db.query.trackableItems.findFirst({
+        where: eq(trackableItems.id, project.id),
         columns: {
           id: true,
           name: true,
         },
       })
 
-      if (!project) {
+      if (!projectRecord) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Project not found.",
@@ -592,16 +579,16 @@ export const projectsRouter = createTRPCRouter({
             maxVersion: max(trackableForms.version),
           })
           .from(trackableForms)
-          .where(eq(trackableForms.trackableId, project.id))
+          .where(eq(trackableForms.trackableId, projectRecord.id))
 
         const nextVersion = (versionResult?.maxVersion ?? 0) + 1
 
         const [createdForm] = await tx
           .insert(trackableForms)
           .values({
-            trackableId: project.id,
+            trackableId: projectRecord.id,
             version: nextVersion,
-            title: `${project.name} feedback form`,
+            title: `${projectRecord.name} feedback form`,
             status: "draft",
             submitLabel: "Submit response",
             successMessage: "Thanks for your response.",
@@ -613,7 +600,7 @@ export const projectsRouter = createTRPCRouter({
           .set({
             activeFormId: createdForm.id,
           })
-          .where(eq(trackableItems.id, project.id))
+          .where(eq(trackableItems.id, projectRecord.id))
 
         return createdForm
       })
@@ -637,20 +624,7 @@ export const projectsRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      const project = await db.query.trackableItems.findFirst({
-        where: (table, { and, eq }) =>
-          and(eq(table.id, input.projectId), eq(table.ownerId, userId)),
-        columns: {
-          id: true,
-        },
-      })
-
-      if (!project) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Project not found.",
-        })
-      }
+      const project = await assertProjectAccess(input.projectId, userId, "manage")
 
       const normalizedForm = normalizeEditableForm(input.form)
 
@@ -751,15 +725,38 @@ export const projectsRouter = createTRPCRouter({
 
       const slug = generateSlug(input.name)
 
-      const [newProject] = await db
-        .insert(trackableItems)
-        .values({
-          ownerId: userId,
-          name: input.name,
-          description: input.description,
-          slug,
-        })
-        .returning()
+      const [newProject] = await db.transaction(async (tx) => {
+        const [createdProject] = await tx
+          .insert(trackableItems)
+          .values({
+            ownerId: userId,
+            name: input.name,
+            description: input.description,
+            slug,
+          })
+          .returning()
+
+        const [createdForm] = await tx
+          .insert(trackableForms)
+          .values({
+            trackableId: createdProject.id,
+            version: 1,
+            title: `${createdProject.name} feedback form`,
+            status: "draft",
+            submitLabel: "Submit response",
+            successMessage: "Thanks for your response.",
+          })
+          .returning()
+
+        await tx
+          .update(trackableItems)
+          .set({
+            activeFormId: createdForm.id,
+          })
+          .where(eq(trackableItems.id, createdProject.id))
+
+        return [createdProject]
+      })
 
       return newProject
     }),
@@ -781,23 +778,24 @@ export const projectsRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      const project = await db.query.trackableItems.findFirst({
-        where: (table, { and, eq }) =>
-          and(eq(table.id, input.projectId), eq(table.ownerId, userId)),
+      const project = await assertProjectAccess(input.projectId, userId, "manage")
+
+      const projectRecord = await db.query.trackableItems.findFirst({
+        where: eq(trackableItems.id, project.id),
         columns: {
           id: true,
           settings: true,
         },
       })
 
-      if (!project) {
+      if (!projectRecord) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Project not found.",
         })
       }
 
-      const existingSettings = project.settings || {}
+      const existingSettings = projectRecord.settings || {}
 
       const [updated] = await db
         .update(trackableItems)
@@ -811,7 +809,7 @@ export const projectsRouter = createTRPCRouter({
             allowAnonymousSubmissions: input.allowAnonymousSubmissions ?? true,
           },
         })
-        .where(eq(trackableItems.id, project.id))
+        .where(eq(trackableItems.id, projectRecord.id))
         .returning()
 
       return updated
@@ -831,7 +829,7 @@ export const projectsRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      await assertProjectOwner(input.projectId, userId)
+      await assertProjectAccess(input.projectId, userId, "manage")
 
       const normalizedEmail = input.email.trim().toLowerCase()
 
@@ -886,7 +884,7 @@ export const projectsRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      await assertProjectOwner(input.projectId, userId)
+      await assertProjectAccess(input.projectId, userId, "manage")
 
       const existingGrant = await db.query.trackableAccessGrants.findFirst({
         where: and(
@@ -930,7 +928,7 @@ export const projectsRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      await assertProjectOwner(input.projectId, userId)
+      await assertProjectAccess(input.projectId, userId, "manage")
 
       const [createdLink] = await db
         .insert(trackableShareLinks)
@@ -960,7 +958,7 @@ export const projectsRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      await assertProjectOwner(input.projectId, userId)
+      await assertProjectAccess(input.projectId, userId, "manage")
 
       const existingLink = await db.query.trackableShareLinks.findFirst({
         where: and(
@@ -1006,20 +1004,7 @@ export const projectsRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      const project = await db.query.trackableItems.findFirst({
-        where: (table, { and, eq }) =>
-          and(eq(table.id, input.projectId), eq(table.ownerId, userId)),
-        columns: {
-          id: true,
-        },
-      })
-
-      if (!project) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Project not found.",
-        })
-      }
+      const project = await assertProjectAccess(input.projectId, userId, "manage")
 
       const plaintextKey = buildApiKeySecret()
       const expiresAt = resolveApiKeyExpiration(input.expirationPreset)
@@ -1027,7 +1012,7 @@ export const projectsRouter = createTRPCRouter({
       const [createdKey] = await db
         .insert(apiKeys)
         .values({
-          ownerId: userId,
+          ownerId: project.ownerId,
           projectId: project.id,
           name: input.name,
           keyPrefix: plaintextKey.slice(0, 20),
@@ -1064,12 +1049,11 @@ export const projectsRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      await assertProjectOwner(input.projectId, userId)
+      await assertProjectAccess(input.projectId, userId, "manage")
 
       const existingKey = await db.query.apiKeys.findFirst({
         where: and(
           eq(apiKeys.id, input.apiKeyId),
-          eq(apiKeys.ownerId, userId),
           eq(apiKeys.projectId, input.projectId)
         ),
         columns: {

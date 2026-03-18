@@ -8,6 +8,7 @@ import {
 	Edit3,
 	Eye,
 	FileText,
+	FormInput,
 	Plus,
 	Star,
 	Trash2,
@@ -65,6 +66,10 @@ type NotesConfig = Extract<
 	EditableTrackableFormField["config"],
 	{ kind: "notes" }
 >;
+type ShortTextConfig = Extract<
+	EditableTrackableFormField["config"],
+	{ kind: "short_text" }
+>;
 
 function isRatingField(
 	field: EditableTrackableFormField,
@@ -84,6 +89,12 @@ function isNotesField(
 	return field.config.kind === "notes";
 }
 
+function isShortTextField(
+	field: EditableTrackableFormField,
+): field is EditableTrackableFormField & { config: ShortTextConfig } {
+	return field.config.kind === "short_text";
+}
+
 function getFieldIcon(kind: EditableTrackableFormField["kind"]) {
 	switch (kind) {
 		case "rating":
@@ -92,6 +103,8 @@ function getFieldIcon(kind: EditableTrackableFormField["kind"]) {
 			return <CheckSquare className="size-4" />;
 		case "notes":
 			return <FileText className="size-4" />;
+		case "short_text":
+			return <FormInput className="size-4" />;
 	}
 }
 
@@ -175,6 +188,14 @@ function PreviewDialog({ draft }: { draft: EditableTrackableForm }) {
 											field.config.placeholder ?? "Write your response..."
 										}
 										className="min-h-24 resize-none"
+									/>
+								) : null}
+								{isShortTextField(field) ? (
+									<Input
+										disabled
+										placeholder={
+											field.config.placeholder ?? "Type your answer..."
+										}
 									/>
 								) : null}
 							</Card>
@@ -385,11 +406,11 @@ function FieldPreview({
 									</div>
 								) : null}
 
-								{isNotesField(field) ? (
+								{isNotesField(field) || isShortTextField(field) ? (
 									<div className="space-y-2">
 										<Label>Placeholder</Label>
 										<p className="text-xs text-muted-foreground">
-											Optional example text shown inside the notes field.
+											Optional example text shown inside the field.
 										</p>
 										<Input
 											value={field.config.placeholder ?? ""}
@@ -567,6 +588,14 @@ function FieldPreview({
 					placeholder={field.config.placeholder ?? "Write your response..."}
 				/>
 			) : null}
+
+			{isShortTextField(field) ? (
+				<Input
+					disabled
+					className="mt-3 text-sm"
+					placeholder={field.config.placeholder ?? "Type your answer..."}
+				/>
+			) : null}
 		</Card>
 	);
 }
@@ -587,16 +616,6 @@ export function FormBuilder({
 		activeForm
 			? formSnapshotToEditableForm(activeForm)
 			: createDefaultEditableForm(projectName),
-	);
-
-	const createForm = useMutation(
-		trpc.projects.createForm.mutationOptions({
-			onSuccess: async () => {
-				await queryClient.invalidateQueries({
-					queryKey: trpc.projects.getById.queryKey({ id: projectId }),
-				});
-			},
-		}),
 	);
 
 	const saveForm = useMutation(
@@ -725,13 +744,11 @@ export function FormBuilder({
 		<Card className="shadow-sm">
 			<CardHeader className="flex flex-row items-center justify-between border-b pb-4">
 				<div>
-					<CardTitle className="text-lg">
-						{activeForm?.title ?? "No active form"}
-					</CardTitle>
+					<CardTitle className="text-lg">{draft.title}</CardTitle>
 					<CardDescription>
 						{activeForm
 							? `Version ${activeForm.version}`
-							: "Create and configure a form for this project."}
+							: "Draft form ready to configure."}
 					</CardDescription>
 				</div>
 				<div className="flex items-center gap-2">
@@ -750,25 +767,21 @@ export function FormBuilder({
 						draft={draft}
 						onChange={(nextDraft) => setDraft(nextDraft)}
 					/>
-					{activeForm ? (
-						<>
-							<Button
-								type="button"
-								variant="outline"
-								onClick={resetDraft}
-								disabled={!isDirty || saveForm.isPending}
-							>
-								Reset
-							</Button>
-							<Button
-								type="button"
-								onClick={handleSave}
-								disabled={!isDirty || saveForm.isPending}
-							>
-								{saveForm.isPending ? "Saving..." : "Save changes"}
-							</Button>
-						</>
-					) : null}
+					<Button
+						type="button"
+						variant="outline"
+						onClick={resetDraft}
+						disabled={!isDirty || saveForm.isPending}
+					>
+						Reset
+					</Button>
+					<Button
+						type="button"
+						onClick={handleSave}
+						disabled={!isDirty || saveForm.isPending}
+					>
+						{saveForm.isPending ? "Saving..." : "Save changes"}
+					</Button>
 				</div>
 			</CardHeader>
 
@@ -782,6 +795,7 @@ export function FormBuilder({
 							{(
 								[
 									{ kind: "rating", label: "Quick Rating" },
+									{ kind: "short_text", label: "Short Text" },
 									{ kind: "notes", label: "Notes / Input" },
 									{ kind: "checkboxes", label: "Checkbox" },
 								] as const
@@ -797,17 +811,6 @@ export function FormBuilder({
 								</button>
 							))}
 						</div>
-
-						{!activeForm ? (
-							<Button
-								type="button"
-								onClick={() => createForm.mutate({ projectId })}
-								disabled={createForm.isPending}
-								className="w-full"
-							>
-								{createForm.isPending ? "Creating..." : "Create form"}
-							</Button>
-						) : null}
 					</div>
 
 					<div className="col-span-1 space-y-6 bg-muted/5 p-6 md:col-span-3 md:p-8">

@@ -10,7 +10,6 @@ import {
 
 import {
   expiresAt,
-  metadataJson,
   nullableTimestamp,
   occurredAt,
   ownerId,
@@ -62,7 +61,7 @@ export const trackableApiUsageEvents = pgTable(
     requestId: text("request_id"),
     occurredAt: occurredAt(),
     payload: jsonb("payload").$type<UsageEventPayload>().notNull(),
-    metadata: metadataJson<UsageEventMetadata>(),
+    metadata: text("metadata").$type<UsageEventMetadata>(),
   },
   (table) => [
     uniqueIndex("trackable_api_usage_events_request_id_idx").on(

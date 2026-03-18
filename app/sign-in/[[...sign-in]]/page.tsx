@@ -1,9 +1,7 @@
-import { SignIn } from "@clerk/nextjs"
+import { SignInPageClient } from "./sign-in-page-client"
+
+export const dynamic = "force-static"
 
 export default function SignInPage() {
-  return (
-    <div className="flex min-h-svh items-center justify-center p-6">
-      <SignIn />
-    </div>
-  )
+  return <SignInPageClient />
 }

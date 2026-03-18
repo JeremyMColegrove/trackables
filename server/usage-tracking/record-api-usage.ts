@@ -113,7 +113,7 @@ export async function recordApiUsage(input: RecordApiUsageInput) {
         requestId,
         occurredAt,
         payload,
-        metadata: input.metadata ?? undefined,
+        metadata: input.metadata ?? null,
       })
       .returning({
         id: trackableApiUsageEvents.id,

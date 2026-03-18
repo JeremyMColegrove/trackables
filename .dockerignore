@@ -1,0 +1,15 @@
+.git
+.gitignore
+.next
+.DS_Store
+.env
+.env.*
+node_modules
+npm-debug.log*
+coverage
+.clerk
+.agent
+.agents
+README.md
+AGENTS.md
+tsconfig.tsbuildinfo

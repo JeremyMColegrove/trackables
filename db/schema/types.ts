@@ -28,15 +28,23 @@ export interface NotesFieldConfig {
   maxLength?: number
 }
 
+export interface ShortTextFieldConfig {
+  kind: "short_text"
+  placeholder?: string
+  maxLength?: number
+}
+
 export type FormFieldConfig =
   | RatingFieldConfig
   | CheckboxesFieldConfig
   | NotesFieldConfig
+  | ShortTextFieldConfig
 
 export type FormAnswerValue =
   | { kind: "rating"; value: number }
   | { kind: "checkboxes"; value: string[] }
   | { kind: "notes"; value: string }
+  | { kind: "short_text"; value: string }
 
 export interface TrackableFormFieldSnapshot {
   id: string
@@ -89,12 +97,6 @@ export interface SubmissionMetadata {
   deviceId?: string
 }
 
-export interface UsageEventMetadata {
-  ipHash?: string
-  userAgent?: string
-  referrer?: string
-  requestSource?: string
-  headers?: Record<string, string>
-}
+export type UsageEventMetadata = string
 
 export type UsageEventPayload = Record<string, unknown>

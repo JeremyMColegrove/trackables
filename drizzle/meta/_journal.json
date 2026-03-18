@@ -22,6 +22,27 @@
       "when": 1773807424630,
       "tag": "0002_fixed_the_santerians",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773807424631,
+      "tag": "0003_project_bound_api_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773867600000,
+      "tag": "0004_usage_metadata_text",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1773896400000,
+      "tag": "0005_short_text_field_kind",
+      "breakpoints": true
     }
   ]
 }

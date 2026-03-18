@@ -97,7 +97,8 @@ export function DashboardMetrics() {
               accessibilityLayer
               data={chartData}
               margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
-              barGap={4}
+              barGap={1}
+              barCategoryGap="28%"
             >
               <CartesianGrid vertical={false} />
               <XAxis

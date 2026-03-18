@@ -195,9 +195,10 @@ export function SettingsDialog({ project }: { project: ProjectDetails }) {
 							const savedValues: SettingsFormValues = {
 								name: variables.name,
 								description: variables.description ?? "",
-								isFormEnabled: variables.isFormEnabled,
-								isApiEnabled: variables.isApiEnabled,
-								allowAnonymousSubmissions: variables.allowAnonymousSubmissions,
+								isFormEnabled: variables.isFormEnabled ?? true,
+								isApiEnabled: variables.isApiEnabled ?? true,
+								allowAnonymousSubmissions:
+									variables.allowAnonymousSubmissions ?? true,
 							};
 							const savedSnapshot = serializeSettings(savedValues);
 							const currentSnapshot = serializeSettings(form.getValues());

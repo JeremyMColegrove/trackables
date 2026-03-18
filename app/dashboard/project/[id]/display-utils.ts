@@ -72,6 +72,8 @@ export function formatFieldKind(value: string) {
       return "Checkboxes"
     case "notes":
       return "Notes"
+    case "short_text":
+      return "Short text"
     default:
       return value
   }
@@ -85,6 +87,8 @@ export function formatFieldConfigSummary(config: FormFieldConfig) {
       return `${config.options.length} option${config.options.length === 1 ? "" : "s"}`
     case "notes":
       return config.maxLength ? `Up to ${config.maxLength} characters` : "Free text"
+    case "short_text":
+      return config.maxLength ? `Up to ${config.maxLength} characters` : "Single line"
     default:
       return "Configured field"
   }
@@ -101,6 +105,8 @@ export function formatAnswerValue(value: FormAnswerValue | undefined) {
     case "checkboxes":
       return value.value.length > 0 ? value.value.join(", ") : "No selections"
     case "notes":
+      return value.value.trim() ? value.value : "No response"
+    case "short_text":
       return value.value.trim() ? value.value : "No response"
     default:
       return "No response"

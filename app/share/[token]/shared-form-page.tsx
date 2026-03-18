@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
+import { useAuth } from "@clerk/nextjs"
 import { CheckCircle2, Heart, Loader2, ShieldCheck, Star, ThumbsUp } from "lucide-react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,6 +21,7 @@ import {
   isCheckboxesField,
   isNotesField,
   isRatingField,
+  isShortTextField,
   requiresResponderEmail,
 } from "@/lib/trackable-form-submission"
 import { getSharedFormCompletionCookieName } from "@/lib/shared-form-completion-cookie"
@@ -59,9 +62,11 @@ function SharedFormSkeleton() {
 function SharedFormUnavailable({
   title,
   description,
+  children,
 }: {
   title: string
   description: string
+  children?: React.ReactNode
 }) {
   return (
     <div className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center px-4 py-10 md:px-6">
@@ -72,6 +77,7 @@ function SharedFormUnavailable({
           </Badge>
           <CardTitle className="text-2xl">{title}</CardTitle>
           <p className="max-w-xl text-sm text-muted-foreground">{description}</p>
+          {children ? <div className="pt-2">{children}</div> : null}
         </CardHeader>
       </Card>
     </div>
@@ -88,6 +94,7 @@ type SharedProject = {
 type SharedSettings = {
   allowAnonymousSubmissions: boolean
   collectResponderEmail: boolean
+  requiresAuthentication: boolean
 }
 
 type SharedForm = {
@@ -99,16 +106,9 @@ type SharedForm = {
   fields: TrackableFormFieldSnapshot[]
 }
 
-export function SharedFormPage({
-  token,
-  initialHasSubmitted,
-  isAnonymousVisitor,
-}: {
-  token: string
-  initialHasSubmitted: boolean
-  isAnonymousVisitor: boolean
-}) {
+export function SharedFormPage({ token }: { token: string }) {
   const trpc = useTRPC()
+  const { isLoaded, userId } = useAuth()
   const sharedFormQuery = useQuery(
     trpc.projects.getSharedForm.queryOptions(
       { token },
@@ -118,7 +118,15 @@ export function SharedFormPage({
     )
   )
 
-  if (sharedFormQuery.isLoading) {
+  useEffect(() => {
+    if (!isLoaded) {
+      return
+    }
+
+    void sharedFormQuery.refetch()
+  }, [isLoaded, sharedFormQuery, userId])
+
+  if (!isLoaded || sharedFormQuery.isLoading) {
     return <SharedFormSkeleton />
   }
 
@@ -147,8 +155,8 @@ export function SharedFormPage({
     <SharedFormCard
       key={sharedFormQuery.data.form.id}
       token={token}
-      initialHasSubmitted={initialHasSubmitted}
-      isAnonymousVisitor={isAnonymousVisitor}
+      isAnonymousVisitor={!userId}
+      initialHasSubmitted={sharedFormQuery.data.viewer.hasSubmitted}
       project={sharedFormQuery.data.project}
       form={sharedFormQuery.data.form}
       settings={sharedFormQuery.data.settings}
@@ -172,6 +180,9 @@ function SharedFormCard({
   settings: SharedSettings
 }) {
   const trpc = useTRPC()
+  const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [submissionStatus, setSubmissionStatus] = useState<
     "idle" | "submitted" | "already-submitted"
   >(initialHasSubmitted ? "already-submitted" : "idle")
@@ -182,12 +193,37 @@ function SharedFormCard({
   const [submissionError, setSubmissionError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (
+      submissionStatus !== "idle" ||
+      !isAnonymousVisitor ||
+      typeof document === "undefined"
+    ) {
+      return
+    }
+
+    const cookieName = getSharedFormCompletionCookieName(token)
+    const hasCompletionCookie = document.cookie
+      .split("; ")
+      .some((entry) => entry.startsWith(`${cookieName}=true`))
+
+    if (hasCompletionCookie) {
+      setSubmissionStatus("already-submitted")
+    }
+  }, [isAnonymousVisitor, submissionStatus, token])
+
+  useEffect(() => {
     if (submissionStatus === "idle" || !isAnonymousVisitor) {
       return
     }
 
     document.cookie = `${getSharedFormCompletionCookieName(token)}=true; path=/share/${encodeURIComponent(token)}; max-age=${sharedFormCompletionCookieMaxAge}; samesite=lax`
   }, [submissionStatus, isAnonymousVisitor, token])
+
+  useEffect(() => {
+    if (initialHasSubmitted) {
+      setSubmissionStatus("already-submitted")
+    }
+  }, [initialHasSubmitted])
 
   const submitSharedForm = useMutation(
     trpc.projects.submitSharedForm.mutationOptions({
@@ -207,6 +243,33 @@ function SharedFormCard({
     () => requiresResponderEmail(settings),
     [settings]
   )
+
+  useEffect(() => {
+    if (!settings.requiresAuthentication || !isAnonymousVisitor) {
+      return
+    }
+
+    const redirectUrl = `${pathname}${
+      searchParams.size > 0 ? `?${searchParams.toString()}` : ""
+    }`
+
+    router.replace(`/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`)
+  }, [
+    isAnonymousVisitor,
+    pathname,
+    router,
+    searchParams,
+    settings.requiresAuthentication,
+  ])
+
+  if (settings.requiresAuthentication && isAnonymousVisitor) {
+    return (
+      <SharedFormUnavailable
+        title="Sign in required"
+        description="Redirecting you to sign in so you can continue to this shared form."
+      />
+    )
+  }
 
   function updateAnswer(fieldId: string, value: FormAnswerValue) {
     setAnswers((current) => ({
@@ -463,6 +526,30 @@ function SharedFormCard({
                         {field.config.maxLength ? (
                           <div className="text-right text-xs text-muted-foreground">
                             {(answer.kind === "notes" ? answer.value.length : 0)}/
+                            {field.config.maxLength}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {isShortTextField(field) ? (
+                      <div className="space-y-3">
+                        <Input
+                          value={answer.kind === "short_text" ? answer.value : ""}
+                          onChange={(event) =>
+                            updateAnswer(field.id, {
+                              kind: "short_text",
+                              value: event.target.value,
+                            })
+                          }
+                          placeholder={
+                            field.config.placeholder ?? "Type your answer..."
+                          }
+                          maxLength={field.config.maxLength}
+                        />
+                        {field.config.maxLength ? (
+                          <div className="text-right text-xs text-muted-foreground">
+                            {(answer.kind === "short_text" ? answer.value.length : 0)}/
                             {field.config.maxLength}
                           </div>
                         ) : null}

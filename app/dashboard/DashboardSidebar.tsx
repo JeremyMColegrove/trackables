@@ -1,9 +1,11 @@
 "use client"
 
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { useIsMobile } from "@/hooks/use-mobile"
+import { Badge } from "@/components/ui/badge"
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +17,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useTRPC } from "@/trpc/client"
 import {
   dashboardNavItems,
   isDashboardNavItemActive,
@@ -24,10 +27,9 @@ export function DashboardSidebar() {
   const pathname = usePathname()
   const isMobile = useIsMobile()
   const { setOpenMobile } = useSidebar()
-
-  if (!isMobile) {
-    return null
-  }
+  const trpc = useTRPC()
+  const memberCountQuery = useQuery(trpc.team.getMemberCount.queryOptions())
+  const teamMemberCount = memberCountQuery.data?.count ?? 0
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -48,6 +50,7 @@ export function DashboardSidebar() {
                   >
                     <Link
                       href={item.href}
+                      className="flex w-full items-center justify-between gap-2"
                       onClick={() => {
                         if (isMobile) {
                           setOpenMobile(false)
@@ -55,6 +58,14 @@ export function DashboardSidebar() {
                       }}
                     >
                       <span>{item.label}</span>
+                      {item.href === "/dashboard/team" ? (
+                        <Badge
+                          variant="secondary"
+                          className="min-w-5 px-1.5 text-[11px] leading-none"
+                        >
+                          {teamMemberCount}
+                        </Badge>
+                      ) : null}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

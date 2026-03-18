@@ -5,6 +5,7 @@ import type {
   FormAnswerValue,
   NotesFieldConfig,
   RatingFieldConfig,
+  ShortTextFieldConfig,
   TrackableFormFieldSnapshot,
   TrackableFormSnapshot,
   TrackableSubmissionSnapshot,
@@ -61,6 +62,15 @@ export function isNotesField(
   config: NotesFieldConfig
 } {
   return field.kind === "notes" && field.config.kind === "notes"
+}
+
+export function isShortTextField(
+  field: TrackableFormFieldSnapshot
+): field is TrackableFormFieldSnapshot & {
+  kind: "short_text"
+  config: ShortTextFieldConfig
+} {
+  return field.kind === "short_text" && field.config.kind === "short_text"
 }
 
 export function buildSubmissionSnapshot(
@@ -142,7 +152,20 @@ function buildFieldAnswer(
       fieldLabel: field.label,
       value: {
         kind: "notes",
-        value: parseNotesValue(field, rawValue),
+        value: parseTextValue(field, rawValue),
+      },
+    }
+  }
+
+  if (isShortTextField(field)) {
+    return {
+      fieldId: field.id,
+      fieldKey: field.key,
+      fieldKind: field.kind,
+      fieldLabel: field.label,
+      value: {
+        kind: "short_text",
+        value: parseTextValue(field, rawValue),
       },
     }
   }
@@ -225,10 +248,10 @@ function parseCheckboxValues(
   return normalizedValues
 }
 
-function parseNotesValue(
+function parseTextValue(
   field: TrackableFormFieldSnapshot & {
-    kind: "notes"
-    config: NotesFieldConfig
+    kind: "notes" | "short_text"
+    config: NotesFieldConfig | ShortTextFieldConfig
   },
   rawValue: unknown
 ) {
@@ -262,6 +285,8 @@ export function getEmptyAnswerValue(field: TrackableFormFieldSnapshot): FormAnsw
       return { kind: "checkboxes", value: [] }
     case "notes":
       return { kind: "notes", value: "" }
+    case "short_text":
+      return { kind: "short_text", value: "" }
   }
 }
 

@@ -1,4 +1,4 @@
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 import { DashboardHeader } from "./DashboardHeader"
 import { DashboardSidebar } from "./DashboardSidebar"
@@ -11,10 +11,10 @@ export default function DashboardLayout({
   return (
     <SidebarProvider defaultOpen={false} className="bg-background">
       <DashboardSidebar />
-      <div className="flex min-h-svh min-w-0 flex-1 flex-col bg-background">
+      <SidebarInset className="min-h-svh min-w-0 bg-background">
         <DashboardHeader />
         {children}
-      </div>
+      </SidebarInset>
     </SidebarProvider>
   )
 }

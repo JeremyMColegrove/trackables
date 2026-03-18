@@ -27,10 +27,6 @@ export function ApiKeysTable({
   projectId: string
 }) {
   const [apiKeyToRevoke, setApiKeyToRevoke] = useState<ApiKeyRow | null>(null)
-  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null)
-  const [plaintextKeysById, setPlaintextKeysById] = useState<
-    Record<string, string>
-  >({})
   const trpc = useTRPC()
   const queryClient = useQueryClient()
 
@@ -47,27 +43,7 @@ export function ApiKeysTable({
   )
 
   const columns = getApiKeyColumns({
-    copiedKeyId,
-    onCopy: async (apiKey) => {
-      const plaintextKey = plaintextKeysById[apiKey.id]
-
-      if (!plaintextKey) {
-        window.alert(
-          "This API key can no longer be copied because the full value is only available immediately after creation. Create a new key if you need a copyable secret."
-        )
-        return
-      }
-
-      await navigator.clipboard.writeText(plaintextKey)
-      setCopiedKeyId(apiKey.id)
-      window.setTimeout(() => {
-        setCopiedKeyId((currentKeyId) =>
-          currentKeyId === apiKey.id ? null : currentKeyId
-        )
-      }, 2000)
-    },
     onRevoke: setApiKeyToRevoke,
-    plaintextKeysById,
     revokingKeyId: revokeApiKey.isPending ? apiKeyToRevoke?.id : null,
   })
 
@@ -92,13 +68,6 @@ export function ApiKeysTable({
         headerButton={
           <CreateApiKeyDialog
             projectId={projectId}
-            onCreated={(createdKey) => {
-              setPlaintextKeysById((currentKeys) => ({
-                ...currentKeys,
-                [createdKey.id]: createdKey.plaintextKey,
-              }))
-              setCopiedKeyId(null)
-            }}
           />
         }
         emptyMessage="No API keys created yet."

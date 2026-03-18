@@ -2,22 +2,21 @@ import { TRPCError } from "@trpc/server"
 
 import { recordApiUsage } from "@/server/usage-tracking/record-api-usage"
 
-function getRequestSource(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for")
+function parseUsageMetadata(formData: FormData) {
+  const rawMetadata = formData.get("metadata") ?? formData.get("Metadata")
 
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0]?.trim() ?? null
+  if (rawMetadata === null) {
+    return null
   }
 
-  return request.headers.get("x-real-ip")
-}
-
-function buildRequestMetadata(request: Request) {
-  return {
-    userAgent: request.headers.get("user-agent") ?? undefined,
-    referrer: request.headers.get("referer") ?? undefined,
-    requestSource: getRequestSource(request) ?? undefined,
+  if (typeof rawMetadata !== "string") {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: 'The "metadata" form-data field must be a text value.',
+    })
   }
+
+  return rawMetadata
 }
 
 function getErrorStatus(error: TRPCError) {
@@ -66,11 +65,13 @@ export async function POST(request: Request) {
   }
 
   try {
+    const customMetadata = parseUsageMetadata(formData)
+
     const usageEvent = await recordApiUsage({
       apiKey,
       name,
       requestId: request.headers.get("x-request-id"),
-      metadata: buildRequestMetadata(request),
+      metadata: customMetadata,
     })
 
     return Response.json({

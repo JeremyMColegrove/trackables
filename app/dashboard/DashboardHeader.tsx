@@ -1,12 +1,15 @@
 "use client"
 
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { useIsMobile } from "@/hooks/use-mobile"
+import { Badge } from "@/components/ui/badge"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { UserAccountButton } from "@/components/user-account-button"
 import { cn } from "@/lib/utils"
+import { useTRPC } from "@/trpc/client"
 import {
   dashboardNavItems,
   isDashboardNavItemActive,
@@ -15,6 +18,9 @@ import {
 export function DashboardHeader() {
   const pathname = usePathname()
   const isMobile = useIsMobile()
+  const trpc = useTRPC()
+  const memberCountQuery = useQuery(trpc.team.getMemberCount.queryOptions())
+  const teamMemberCount = memberCountQuery.data?.count ?? 0
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -35,12 +41,20 @@ export function DashboardHeader() {
                     : undefined
                 }
                 className={cn(
-                  "transition-colors hover:text-foreground",
+                  "inline-flex items-center gap-2 transition-colors hover:text-foreground",
                   isDashboardNavItemActive(item.href, pathname) &&
                     "text-foreground"
                 )}
               >
                 {item.label}
+                {item.href === "/dashboard/team" ? (
+                  <Badge
+                    variant="secondary"
+                    className="min-w-5 px-1.5 text-[11px] leading-none"
+                  >
+                    {teamMemberCount}
+                  </Badge>
+                ) : null}
               </Link>
             ))}
           </nav>

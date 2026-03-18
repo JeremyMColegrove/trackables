@@ -30,7 +30,7 @@ export default function RootLayout({
         inter.variable
       )}
     >
-      <body className="pb-24">
+      <body className="min-h-svh bg-background">
         <ClerkProvider>
           <TRPCReactProvider>
             <TooltipProvider>

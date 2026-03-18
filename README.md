@@ -1,21 +1,64 @@
-# Next.js template
+# Trackable
 
-This is a Next.js template with shadcn/ui.
+Trackable is a production-focused Next.js application for managing shareable trackable items, structured form submissions, and API usage tracking.
 
-## Adding components
+## Local development
 
-To add components to your app, run the following command:
+Install dependencies and start the dev server:
 
 ```bash
-npx shadcn@latest add button
+npm ci
+npm run dev
 ```
 
-This will place the ui components in the `components` directory.
+## Production build
 
-## Using components
+This app is configured for Next.js standalone output.
 
-To use the components in your app, import them as follows:
+Build and run it locally:
 
-```tsx
-import { Button } from "@/components/ui/button";
+```bash
+npm run build
+npm run start:standalone
 ```
+
+The standalone server listens on `PORT` and respects `HOSTNAME`, so for container usage the runtime defaults to:
+
+- `PORT=3000`
+- `HOSTNAME=0.0.0.0`
+
+## Docker
+
+Build the image:
+
+```bash
+docker build -t trackable .
+```
+
+Run the container:
+
+```bash
+docker run --rm -p 3000:3000 \
+  -e DATABASE_URL=your_database_url \
+  -e NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key \
+  -e CLERK_SECRET_KEY=your_clerk_secret_key \
+  -e CLERK_WEBHOOK_SIGNING_SECRET=your_clerk_webhook_signing_secret \
+  trackable
+```
+
+The Docker image uses a multi-stage build:
+
+- installs dependencies in a dedicated layer
+- builds the Next.js app with `output: "standalone"`
+- copies only `public`, `.next/static`, and `.next/standalone` into the final runtime image
+
+## Required environment
+
+At minimum, production deployments should provide:
+
+- `DATABASE_URL`
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `CLERK_WEBHOOK_SIGNING_SECRET`
+
+Add any other environment variables required by your deployment platform in the same way.

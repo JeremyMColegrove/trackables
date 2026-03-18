@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server"
-import { and, desc, eq, gte, inArray, sum } from "drizzle-orm"
+import { and, desc, gte, inArray, sum } from "drizzle-orm"
 
 import { db } from "@/db"
 import {
@@ -7,6 +7,7 @@ import {
   trackableFormSubmissions,
   trackableItems,
 } from "@/db/schema"
+import { getAccessibleProjectIds } from "@/server/project-access"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 
 const ACTIVITY_WINDOW_DAYS = 7
@@ -43,29 +44,23 @@ export const dashboardRouter = createTRPCRouter({
 
     const now = new Date()
     const windowStart = getWindowStart(now)
+    const projectIds = await getAccessibleProjectIds(userId)
 
-    const projects = await db.query.trackableItems.findMany({
-      where: eq(trackableItems.ownerId, userId),
-      columns: {
-        id: true,
-      },
-    })
-
-    const projectsCount = projects.length
-    const projectIds = projects.map((project) => project.id)
+    const projectsCount = projectIds.length
 
     const [submissionTotals, recentSubmissions, recentUsageEvents] =
       await Promise.all([
-        db
-          .select({
-            totalSubmissions: sum(trackableItems.submissionCount),
-            totalUsageTracks: sum(trackableItems.apiUsageCount),
-          })
-          .from(trackableItems)
-          .where(eq(trackableItems.ownerId, userId)),
         projectIds.length === 0
           ? Promise.resolve([])
-          : db.query.trackableFormSubmissions.findMany({
+          : db
+              .select({
+                totalSubmissions: sum(trackableItems.submissionCount),
+                totalUsageTracks: sum(trackableItems.apiUsageCount),
+              })
+              .from(trackableItems)
+              .where(inArray(trackableItems.id, projectIds)),
+        db
+          .query.trackableFormSubmissions.findMany({
               where: and(
                 inArray(trackableFormSubmissions.trackableId, projectIds),
                 gte(trackableFormSubmissions.createdAt, windowStart)
@@ -125,8 +120,14 @@ export const dashboardRouter = createTRPCRouter({
       throw new TRPCError({ code: "UNAUTHORIZED" })
     }
 
+    const projectIds = await getAccessibleProjectIds(userId)
+
+    if (projectIds.length === 0) {
+      return []
+    }
+
     return db.query.trackableItems.findMany({
-      where: eq(trackableItems.ownerId, userId),
+      where: inArray(trackableItems.id, projectIds),
       orderBy: [desc(trackableItems.createdAt)],
       limit: 10,
       columns: {
@@ -144,6 +145,5 @@ export const dashboardRouter = createTRPCRouter({
         },
       },
     })
-
   }),
 })
