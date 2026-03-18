@@ -1,0 +1,154 @@
+"use client"
+
+import type { ColumnDef } from "@tanstack/react-table"
+import { Copy, Trash2 } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
+
+import { formatDateTime, formatStatusLabel } from "./display-utils"
+import type { ApiKeyRow } from "./table-types"
+
+type ApiKeyColumnsOptions = {
+  copiedKeyId?: string | null
+  onCopy: (apiKey: ApiKeyRow) => void | Promise<void>
+  onRevoke: (apiKey: ApiKeyRow) => void
+  plaintextKeysById: Record<string, string>
+  revokingKeyId?: string | null
+}
+
+export function getApiKeyColumns({
+  copiedKeyId,
+  onCopy,
+  onRevoke,
+  plaintextKeysById,
+  revokingKeyId,
+}: ApiKeyColumnsOptions): ColumnDef<ApiKeyRow>[] {
+  return [
+    {
+      accessorKey: "name",
+      header: ({ column }) => (
+        <div className="pl-4">
+          <DataTableColumnHeader column={column} title="Key" />
+        </div>
+      ),
+      cell: ({ row }) => {
+        const apiKey = row.original
+
+        return (
+          <div className="flex items-center gap-3 pl-4 font-medium">
+            <div
+              className={
+                apiKey.status === "active"
+                  ? "size-2 rounded-full bg-emerald-500"
+                  : "size-2 rounded-full bg-muted-foreground"
+              }
+            />
+            <div className="space-y-0.5">
+              <div
+                className={
+                  apiKey.status === "revoked"
+                    ? "text-muted-foreground"
+                    : undefined
+                }
+              >
+                {apiKey.name}
+              </div>
+              <div className="text-xs font-normal text-muted-foreground capitalize">
+                {formatStatusLabel(apiKey.status)}
+              </div>
+            </div>
+          </div>
+        )
+      },
+      enableHiding: false,
+    },
+    {
+      accessorKey: "maskedKey",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Masked Key" />
+      ),
+      cell: ({ row }) => (
+        <span className="font-mono text-sm text-muted-foreground">
+          {row.getValue("maskedKey")}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "expiresAt",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Expires" />
+      ),
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {row.original.expiresAt
+            ? formatDateTime(row.original.expiresAt)
+            : "Never"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "projectUsageCount",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Project Usage" />
+      ),
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {row.original.projectUsageCount}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "lastUsedAt",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Last Used" />
+      ),
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {formatDateTime(row.original.lastUsedAt)}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="pr-4 text-right">Actions</div>,
+      cell: ({ row }) => {
+        const apiKey = row.original
+        const canCopy = Boolean(plaintextKeysById[apiKey.id])
+        const isCopied = copiedKeyId === apiKey.id
+        const isRevoking = revokingKeyId === apiKey.id
+
+        return (
+          <div className="flex justify-end gap-1 pr-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              title={
+                canCopy
+                  ? isCopied
+                    ? "Copied"
+                    : "Copy API key"
+                  : "Full API keys are only available immediately after creation."
+              }
+              className="size-8 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() => void onCopy(apiKey)}
+            >
+              <Copy className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={apiKey.status === "revoked" || isRevoking}
+              title="Revoke API key"
+              className="size-8 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => onRevoke(apiKey)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+        )
+      },
+      enableSorting: false,
+    },
+  ]
+}

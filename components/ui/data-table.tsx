@@ -1,0 +1,161 @@
+"use client";
+
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableViewOptions } from "@/components/ui/data-table-view-options";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+import {
+	type ColumnDef,
+	flexRender,
+	getCoreRowModel,
+	getPaginationRowModel,
+	getSortedRowModel,
+	type SortingState,
+	useReactTable,
+	type VisibilityState,
+} from "@tanstack/react-table";
+import * as React from "react";
+
+interface DataTableProps<TData, TValue> {
+	columns: ColumnDef<TData, TValue>[];
+	data: TData[];
+	title?: React.ReactNode;
+	description?: React.ReactNode;
+	onRowClick?: (row: TData) => void;
+	emptyMessage?: string;
+	headerButton?: React.ReactNode;
+	initialPageSize?: number;
+}
+
+export function DataTable<TData, TValue>({
+	columns,
+	data,
+	title,
+	description,
+	onRowClick,
+	emptyMessage = "No results.",
+	headerButton,
+	initialPageSize = 5,
+}: DataTableProps<TData, TValue>) {
+	const [sorting, setSorting] = React.useState<SortingState>([]);
+	const [columnVisibility, setColumnVisibility] =
+		React.useState<VisibilityState>({});
+
+	// eslint-disable-next-line react-hooks/incompatible-library
+	const table = useReactTable({
+		data,
+		columns,
+		onSortingChange: setSorting,
+		onColumnVisibilityChange: setColumnVisibility,
+		getCoreRowModel: getCoreRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+		state: {
+			sorting,
+			columnVisibility,
+		},
+		initialState: {
+			pagination: {
+				pageSize: initialPageSize,
+			},
+		},
+	});
+
+	return (
+		<div className="min-w-0 space-y-4">
+			{(title || description || headerButton) && (
+				<div className="flex items-center justify-between px-1 py-4">
+					<div className="flex flex-col gap-1">
+						{title ? (
+							<h3 className="text-lg font-semibold">{title}</h3>
+						) : null}
+						{description ? (
+							<p className="text-sm text-muted-foreground">{description}</p>
+						) : null}
+					</div>
+					<div className="flex items-center space-x-2">
+						{headerButton}
+						<DataTableViewOptions table={table} />
+					</div>
+				</div>
+			)}
+
+			<div className="min-w-0 max-w-full rounded-md border">
+				<Table>
+					<TableHeader>
+						{table.getHeaderGroups().map((headerGroup) => (
+							<TableRow key={headerGroup.id}>
+								{headerGroup.headers.map((header) => {
+									return (
+										<TableHead key={header.id}>
+											{header.isPlaceholder
+												? null
+												: flexRender(
+														header.column.columnDef.header,
+														header.getContext(),
+													)}
+										</TableHead>
+									);
+								})}
+							</TableRow>
+						))}
+					</TableHeader>
+					<TableBody>
+						{table.getRowModel().rows?.length ? (
+							table.getRowModel().rows.map((row) => (
+								<TableRow
+									key={row.id}
+									data-state={row.getIsSelected() && "selected"}
+									className={cn(
+										onRowClick
+											? "cursor-pointer transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
+											: undefined,
+									)}
+									onClick={() => onRowClick?.(row.original)}
+									onKeyDown={(event) => {
+										if (!onRowClick) {
+											return;
+										}
+
+										if (event.key === "Enter" || event.key === " ") {
+											event.preventDefault();
+											onRowClick(row.original);
+										}
+									}}
+									tabIndex={onRowClick ? 0 : undefined}
+								>
+									{row.getVisibleCells().map((cell) => (
+										<TableCell key={cell.id}>
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext(),
+											)}
+										</TableCell>
+									))}
+								</TableRow>
+							))
+						) : (
+							<TableRow>
+								<TableCell
+									colSpan={columns.length}
+									className="h-24 text-center text-muted-foreground"
+								>
+									{emptyMessage}
+								</TableCell>
+							</TableRow>
+						)}
+					</TableBody>
+				</Table>
+			</div>
+
+			<DataTablePagination table={table} />
+		</div>
+	);
+}

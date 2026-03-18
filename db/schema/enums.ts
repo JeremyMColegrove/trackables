@@ -1,0 +1,31 @@
+import { pgEnum } from "drizzle-orm/pg-core"
+
+export const trackableAccessSubjectTypeEnum = pgEnum(
+  "trackable_access_subject_type",
+  ["user", "email"]
+)
+
+export const trackableAccessRoleEnum = pgEnum("trackable_access_role", [
+  "submit",
+  "view",
+  "manage",
+])
+
+export const trackableFormStatusEnum = pgEnum("trackable_form_status", [
+  "draft",
+  "published",
+  "archived",
+])
+
+export const trackableFormFieldKindEnum = pgEnum("trackable_form_field_kind", [
+  "rating",
+  "checkboxes",
+  "notes",
+])
+
+export const trackableSubmissionSourceEnum = pgEnum(
+  "trackable_submission_source",
+  ["public_link", "user_grant", "email_grant"]
+)
+
+export const apiKeyStatusEnum = pgEnum("api_key_status", ["active", "revoked"])
