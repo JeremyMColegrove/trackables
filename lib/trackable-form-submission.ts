@@ -101,10 +101,7 @@ export function requiresResponderEmail(settings: {
   allowAnonymousSubmissions?: boolean
   collectResponderEmail?: boolean
 } | null) {
-  return (
-    settings?.collectResponderEmail === true ||
-    settings?.allowAnonymousSubmissions === false
-  )
+  return settings?.collectResponderEmail === true
 }
 
 function buildFieldAnswer(

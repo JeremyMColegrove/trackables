@@ -172,20 +172,22 @@ function SharedFormCard({
   settings: SharedSettings
 }) {
   const trpc = useTRPC()
+  const [submissionStatus, setSubmissionStatus] = useState<
+    "idle" | "submitted" | "already-submitted"
+  >(initialHasSubmitted ? "already-submitted" : "idle")
   const [responderEmail, setResponderEmail] = useState("")
   const [answers, setAnswers] = useState<Record<string, FormAnswerValue>>(() =>
     buildInitialAnswers(form.fields)
   )
   const [submissionError, setSubmissionError] = useState<string | null>(null)
-  const [hasSubmitted, setHasSubmitted] = useState(initialHasSubmitted)
 
   useEffect(() => {
-    if (!hasSubmitted || !isAnonymousVisitor) {
+    if (submissionStatus === "idle" || !isAnonymousVisitor) {
       return
     }
 
     document.cookie = `${getSharedFormCompletionCookieName(token)}=true; path=/share/${encodeURIComponent(token)}; max-age=${sharedFormCompletionCookieMaxAge}; samesite=lax`
-  }, [hasSubmitted, isAnonymousVisitor, token])
+  }, [submissionStatus, isAnonymousVisitor, token])
 
   const submitSharedForm = useMutation(
     trpc.projects.submitSharedForm.mutationOptions({
@@ -193,7 +195,7 @@ function SharedFormCard({
         setSubmissionError(null)
       },
       onSuccess: () => {
-        setHasSubmitted(true)
+        setSubmissionStatus("submitted")
       },
       onError: (error) => {
         setSubmissionError(error.message)
@@ -236,7 +238,9 @@ function SharedFormCard({
     })
   }
 
-  if (hasSubmitted) {
+  if (submissionStatus !== "idle") {
+    const isRepeatVisit = submissionStatus === "already-submitted"
+
     return (
       <div className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center px-4 py-10 md:px-6">
         <Card className="w-full rounded-3xl border-border/60 bg-card/95 shadow-sm">
@@ -245,13 +249,17 @@ function SharedFormCard({
               <CheckCircle2 className="size-8" />
             </div>
             <Badge variant="outline" className="rounded-full px-3 py-1">
-              Response recorded
+              {isRepeatVisit ? "Already submitted" : "Response recorded"}
             </Badge>
             <h1 className="text-3xl font-semibold tracking-tight">
-              {form.successMessage ?? "Thanks for your response."}
+              {isRepeatVisit
+                ? "You already submitted this form."
+                : form.successMessage ?? "Thanks for your response."}
             </h1>
             <p className="max-w-lg text-sm text-muted-foreground">
-              Your submission for {project.name} has been saved.
+              {isRepeatVisit
+                ? `Your response for ${project.name} has already been recorded.`
+                : `Your submission for ${project.name} has been saved.`}
             </p>
           </CardContent>
         </Card>

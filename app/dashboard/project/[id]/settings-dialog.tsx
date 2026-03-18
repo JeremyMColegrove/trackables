@@ -25,8 +25,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTRPC } from "@/trpc/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, Globe, Settings, Shield, Zap } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Globe, Settings, Shield, Zap } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Control, FieldPath } from "react-hook-form";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -91,7 +91,9 @@ export function SettingsDialog({ project }: { project: ProjectDetails }) {
 	const queryClient = useQueryClient();
 	const projectQueryKey = trpc.projects.getById.queryKey({ id: project.id });
 	const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const saveStateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const saveStateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 	const inFlightRef = useRef<string | null>(null);
 	const lastSavedRef = useRef("");
 
@@ -150,89 +152,88 @@ export function SettingsDialog({ project }: { project: ProjectDetails }) {
 		trpc.projects.updateSettings.mutationOptions(),
 	);
 
-	function queueSave(delay = 500) {
-		clearSaveTimers();
-		saveTimeoutRef.current = setTimeout(() => {
-			const parsedValues = settingsSchema.safeParse(form.getValues());
+	const queueSave = useCallback(
+		(delay = 500) => {
+			function runSave() {
+				const parsedValues = settingsSchema.safeParse(form.getValues());
 
-			if (!parsedValues.success) {
-				setSaveState("idle");
-				return;
-			}
+				if (!parsedValues.success) {
+					setSaveState("idle");
+					return;
+				}
 
-			const snapshot = serializeSettings(parsedValues.data);
+				const snapshot = serializeSettings(parsedValues.data);
 
-			if (
-				snapshot === lastSavedRef.current ||
-				snapshot === inFlightRef.current
-			) {
-				return;
-			}
+				if (
+					snapshot === lastSavedRef.current ||
+					snapshot === inFlightRef.current
+				) {
+					return;
+				}
 
-			if (updateSettings.isPending) {
+				if (updateSettings.isPending) {
+					setSaveState("saving");
+					saveTimeoutRef.current = setTimeout(() => {
+						runSave();
+					}, 250);
+					return;
+				}
+
+				inFlightRef.current = snapshot;
 				setSaveState("saving");
-				queueSave(250);
-				return;
+				updateSettings.mutate(
+					{
+						projectId: project.id,
+						...parsedValues.data,
+					},
+					{
+						onSuccess: async (_data, variables) => {
+							await queryClient.invalidateQueries({
+								queryKey: projectQueryKey,
+							});
+
+							const savedValues: SettingsFormValues = {
+								name: variables.name,
+								description: variables.description ?? "",
+								isFormEnabled: variables.isFormEnabled,
+								isApiEnabled: variables.isApiEnabled,
+								allowAnonymousSubmissions: variables.allowAnonymousSubmissions,
+							};
+							const savedSnapshot = serializeSettings(savedValues);
+							const currentSnapshot = serializeSettings(form.getValues());
+
+							lastSavedRef.current = savedSnapshot;
+							inFlightRef.current = null;
+
+							if (currentSnapshot === savedSnapshot) {
+								form.reset(savedValues);
+								setSaveState("saved");
+								saveStateTimeoutRef.current = setTimeout(() => {
+									setSaveState("idle");
+								}, 1500);
+								return;
+							}
+
+							setSaveState("idle");
+							saveTimeoutRef.current = setTimeout(() => {
+								runSave();
+							}, 150);
+						},
+						onError: () => {
+							inFlightRef.current = null;
+							setSaveState("error");
+						},
+					},
+				);
 			}
 
-			inFlightRef.current = snapshot;
-			setSaveState("saving");
-			updateSettings.mutate({
-				projectId: project.id,
-				...parsedValues.data,
-			});
-		}, delay);
-	}
-
-	useEffect(() => {
-		if (updateSettings.status !== "success" || !updateSettings.variables) {
-			return;
-		}
-
-		void queryClient.invalidateQueries({ queryKey: projectQueryKey });
-
-		const savedValues: SettingsFormValues = {
-			name: updateSettings.variables.name,
-			description: updateSettings.variables.description ?? "",
-			isFormEnabled: updateSettings.variables.isFormEnabled,
-			isApiEnabled: updateSettings.variables.isApiEnabled,
-			allowAnonymousSubmissions:
-				updateSettings.variables.allowAnonymousSubmissions,
-		};
-		const savedSnapshot = serializeSettings(savedValues);
-		const currentSnapshot = serializeSettings(form.getValues());
-
-		lastSavedRef.current = savedSnapshot;
-		inFlightRef.current = null;
-
-		if (currentSnapshot === savedSnapshot) {
-			form.reset(savedValues);
-			setSaveState("saved");
-			saveStateTimeoutRef.current = setTimeout(() => {
-				setSaveState("idle");
-			}, 1500);
-		} else {
-			setSaveState("idle");
-			queueSave(150);
-		}
-
-		updateSettings.reset();
-	}, [
-		form,
-		projectQueryKey,
-		queryClient,
-		updateSettings,
-	]);
-
-	useEffect(() => {
-		if (updateSettings.status !== "error") {
-			return;
-		}
-
-		inFlightRef.current = null;
-		setSaveState("error");
-		updateSettings.reset();
-	}, [updateSettings]);
+			clearSaveTimers();
+			saveTimeoutRef.current = setTimeout(() => {
+				runSave();
+			}, delay);
+		},
+		[form, project.id, projectQueryKey, queryClient, updateSettings],
+	);
 
 	useEffect(() => {
 		if (!open) {
@@ -301,7 +302,8 @@ export function SettingsDialog({ project }: { project: ProjectDetails }) {
 											Project details
 										</h3>
 										<p className="text-sm text-muted-foreground">
-											Name the project clearly and add context for collaborators.
+											Name the project clearly and add context for
+											collaborators.
 										</p>
 									</div>
 
@@ -313,7 +315,10 @@ export function SettingsDialog({ project }: { project: ProjectDetails }) {
 												<FormItem>
 													<FormLabel>Project Name</FormLabel>
 													<FormControl>
-														<Input placeholder="My Trackable Project" {...field} />
+														<Input
+															placeholder="My Trackable Project"
+															{...field}
+														/>
 													</FormControl>
 													<FormMessage />
 												</FormItem>
@@ -347,8 +352,8 @@ export function SettingsDialog({ project }: { project: ProjectDetails }) {
 											Response access
 										</h3>
 										<p className="text-sm text-muted-foreground">
-											Control whether the shared form accepts submissions and who
-											can submit.
+											Control whether the shared form accepts submissions and
+											who can submit.
 										</p>
 									</div>
 
@@ -386,37 +391,6 @@ export function SettingsDialog({ project }: { project: ProjectDetails }) {
 											label="Enable API"
 											description="Allow usage events from configured API keys."
 										/>
-
-										<div className="rounded-xl border border-border/60 bg-muted/20 p-4">
-											<div className="space-y-1">
-												<span className="text-sm font-medium text-foreground">
-													Project ID
-												</span>
-												<p className="text-xs leading-5 text-muted-foreground">
-													Use this identifier when sending API events or wiring up
-													tracking integrations.
-												</p>
-											</div>
-											<div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-												<div className="min-w-0 flex-1 break-all rounded-lg border border-border/60 bg-background px-3 py-2 font-mono text-xs text-muted-foreground shadow-sm">
-													{project.id}
-												</div>
-												<Button
-													type="button"
-													variant="outline"
-													size="sm"
-													onClick={copyProjectId}
-													className="sm:shrink-0"
-												>
-													{copied ? (
-														<Check className="size-4" />
-													) : (
-														<Copy className="size-4" />
-													)}
-													{copied ? "Copied" : "Copy"}
-												</Button>
-											</div>
-										</div>
 									</div>
 								</TabsContent>
 							</div>

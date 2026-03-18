@@ -29,6 +29,7 @@ import {
   getActiveShareLink,
   requiresAuthenticatedSharedFormAccess,
 } from "@/lib/trackable-share-links"
+import { hasAuthenticatedSharedFormSubmission } from "@/lib/shared-form-submissions"
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -453,13 +454,26 @@ export const projectsRouter = createTRPCRouter({
         })
       }
 
+      if (
+        ctx.auth.userId &&
+        (await hasAuthenticatedSharedFormSubmission({
+          shareLinkId: shareLink.id,
+          userId: ctx.auth.userId,
+        }))
+      ) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "You already submitted this form.",
+        })
+      }
+
       const shouldCollectEmail = requiresResponderEmail(settings)
       const responderEmail = input.responderEmail?.trim().toLowerCase()
 
       if (shouldCollectEmail && !responderEmail) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Responder email is required for this form.",
+          message: "Responder email is required for this form configuration.",
         })
       }
 

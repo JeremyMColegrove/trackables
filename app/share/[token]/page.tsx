@@ -6,6 +6,7 @@ import {
   requiresAuthenticatedSharedFormAccess,
 } from "@/lib/trackable-share-links"
 import { getSharedFormCompletionCookieName } from "@/lib/shared-form-completion-cookie"
+import { hasAuthenticatedSharedFormSubmission } from "@/lib/shared-form-submissions"
 
 import { SharedFormPage } from "./shared-form-page"
 
@@ -28,11 +29,15 @@ export default async function SharePage({
   }
 
   const isAnonymousVisitor = !userId
-  const hasCompletedForm =
-    isAnonymousVisitor &&
-    cookieStore.get(
-      getSharedFormCompletionCookieName(resolvedParams.token)
-    )?.value === "true"
+  const hasCompletedForm = isAnonymousVisitor
+    ? cookieStore.get(getSharedFormCompletionCookieName(resolvedParams.token))
+        ?.value === "true"
+    : userId && shareLink
+      ? await hasAuthenticatedSharedFormSubmission({
+          shareLinkId: shareLink.id,
+          userId,
+        })
+      : false
 
   return (
     <SharedFormPage
