@@ -1,18 +1,40 @@
-import { SignInButton, SignUpButton } from "@clerk/nextjs"
-import { ArrowRight } from "lucide-react"
-import Link from "next/link"
+import type { Metadata } from "next";
+import Link from "next/link";
 
-import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { LandingAuthActions } from "@/components/auth/landing-auth-actions";
+import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in";
+import { buildAbsoluteUrl, siteConfig } from "@/lib/site-config";
 
-export const dynamic = "force-static"
+export const dynamic = "force-dynamic";
+
+export function generateMetadata(): Metadata {
+	const homePageUrl = buildAbsoluteUrl("/");
+
+	return {
+		title: siteConfig.title,
+		description: siteConfig.description,
+		alternates: {
+			canonical: homePageUrl,
+		},
+		openGraph: {
+			type: "website",
+			siteName: siteConfig.name,
+			url: homePageUrl,
+			title: siteConfig.title,
+			description: siteConfig.description,
+		},
+		twitter: {
+			card: "summary",
+			title: siteConfig.title,
+			description: siteConfig.description,
+		},
+	};
+}
 
 export default function Page() {
-
 	return (
 		<main className="flex min-h-svh flex-col bg-background">
-      <RedirectIfSignedIn href="/dashboard" />
+			<RedirectIfSignedIn href="/dashboard" />
 			<header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
 				<div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 sm:px-8">
 					<div className="flex items-center gap-2">
@@ -20,47 +42,18 @@ export default function Page() {
 							Trackable.
 						</span>
 					</div>
-					<div className="flex items-center gap-4">
-						<SignInButton mode="modal">
-							<Button variant="ghost" size="sm">
-								Log in
-							</Button>
-						</SignInButton>
-						<SignUpButton mode="modal">
-							<Button size="sm">Sign up</Button>
-						</SignUpButton>
-					</div>
+					<LandingAuthActions section="navbar" />
 				</div>
 			</header>
 
 			<div className="relative flex flex-col items-center justify-center border-b py-24 sm:py-32">
 				<div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[32px_32px] opacity-20" />
 				<div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-6 text-center lg:px-8">
-					<Badge
-						variant="outline"
-						className="mb-8 rounded-full border-primary/20 p-1 px-3 text-xs font-medium tracking-tight text-primary"
-					>
-						<span className="mr-2 inline-flex h-2 w-2 rounded-full bg-primary" />
-						Trackable v2.0 is now live
-					</Badge>
-
 					<h1 className="text-4xl font-semibold tracking-tighter text-foreground sm:text-6xl md:text-7xl">
 						Surveys for your team.
 					</h1>
 
-					<div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
-						<SignUpButton mode="modal">
-							<Button size="lg">
-								Start tracking now
-								<ArrowRight className="ml-2 size-4" />
-							</Button>
-						</SignUpButton>
-						<SignInButton mode="modal">
-							<Button size="lg" variant="outline">
-								Log in to account
-							</Button>
-						</SignInButton>
-					</div>
+					<LandingAuthActions section="hero" />
 				</div>
 			</div>
 
@@ -114,13 +107,21 @@ export default function Page() {
 					</p>
 					<div className="flex gap-4">
 						<Link
-							href="#"
+							href="/terms"
 							className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 						>
-							Twitter
+							Terms
 						</Link>
 						<Link
-							href="#"
+							href="/privacy"
+							className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+						>
+							Privacy
+						</Link>
+						<Link
+							href="https://github.com/JeremyMColegrove/trackable"
+							target="_blank"
+							rel="noreferrer"
 							className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 						>
 							GitHub

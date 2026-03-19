@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { Geist_Mono, Inter } from "next/font/google"
 import { ClerkProvider } from "@clerk/nextjs"
 
@@ -5,6 +6,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TRPCReactProvider } from "@/components/trpc-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { buildAbsoluteUrl, siteConfig } from "@/lib/site-config"
 import { cn } from "@/lib/utils"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
@@ -14,11 +16,41 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+export const metadata: Metadata = {
+  metadataBase: buildAbsoluteUrl("/"),
+  applicationName: siteConfig.name,
+  title: {
+    default: siteConfig.title,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: siteConfig.name,
+  },
+  openGraph: {
+    type: "website",
+    siteName: siteConfig.name,
+    title: siteConfig.title,
+    description: siteConfig.description,
+  },
+  twitter: {
+    card: "summary",
+    title: siteConfig.title,
+    description: siteConfig.description,
+  },
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const signInUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL ?? "/sign-in"
+  const signUpUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL ?? "/sign-up"
+
   return (
     <html
       lang="en"
@@ -31,7 +63,7 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-svh bg-background">
-        <ClerkProvider>
+        <ClerkProvider signInUrl={signInUrl} signUpUrl={signUpUrl}>
           <TRPCReactProvider>
             <TooltipProvider>
               <ThemeProvider>{children}</ThemeProvider>

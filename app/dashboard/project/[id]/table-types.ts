@@ -3,6 +3,7 @@ import type {
   TrackableFormSnapshot,
   TrackableSubmissionSnapshot,
   TrackableSettings,
+  UsageEventPayload,
 } from "@/db/schema/types"
 
 export type ProjectDetails = {
@@ -48,6 +49,14 @@ export type UsageEventRow = {
     name: string
     maskedKey: string
   }
+  hits: UsageHitRow[]
+}
+
+export type UsageHitRow = {
+  id: string
+  occurredAt: string
+  payload: UsageEventPayload
+  metadata: string | null
 }
 
 export type ApiKeyRow = {

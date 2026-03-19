@@ -32,6 +32,7 @@ interface DataTableProps<TData, TValue> {
 	emptyMessage?: string;
 	headerButton?: React.ReactNode;
 	initialPageSize?: number;
+	fillHeight?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -43,6 +44,7 @@ export function DataTable<TData, TValue>({
 	emptyMessage = "No results.",
 	headerButton,
 	initialPageSize = 5,
+	fillHeight = false,
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [columnVisibility, setColumnVisibility] =
@@ -69,7 +71,12 @@ export function DataTable<TData, TValue>({
 	});
 
 	return (
-		<div className="min-w-0 space-y-4">
+		<div
+			className={cn(
+				"min-w-0 space-y-4",
+				fillHeight ? "flex h-full min-h-0 flex-col" : undefined,
+			)}
+		>
 			{(title || description || headerButton) && (
 				<div className="flex items-center justify-between px-1 py-4">
 					<div className="flex flex-col gap-1">
@@ -87,7 +94,12 @@ export function DataTable<TData, TValue>({
 				</div>
 			)}
 
-			<div className="min-w-0 max-w-full rounded-md border">
+			<div
+				className={cn(
+					"min-w-0 max-w-full rounded-md border",
+					fillHeight ? "flex-1 overflow-auto" : undefined,
+				)}
+			>
 				<Table>
 					<TableHeader>
 						{table.getHeaderGroups().map((headerGroup) => (

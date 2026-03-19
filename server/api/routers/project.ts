@@ -199,6 +199,12 @@ export const projectsRouter = createTRPCRouter({
                 name: string
                 totalHits: number
                 lastOccurredAt: string
+                hits: {
+                  id: string
+                  occurredAt: string
+                  payload: UsageEventPayload
+                  metadata: string | null
+                }[]
               }
             >
           >((groups, event) => {
@@ -214,6 +220,12 @@ export const projectsRouter = createTRPCRouter({
 
             if (existingGroup) {
               existingGroup.totalHits += 1
+              existingGroup.hits.push({
+                id: event.id,
+                occurredAt,
+                payload: event.payload,
+                metadata: event.metadata,
+              })
 
               if (
                 new Date(existingGroup.lastOccurredAt).getTime() <
@@ -230,6 +242,14 @@ export const projectsRouter = createTRPCRouter({
               name,
               totalHits: 1,
               lastOccurredAt: occurredAt,
+              hits: [
+                {
+                  id: event.id,
+                  occurredAt,
+                  payload: event.payload,
+                  metadata: event.metadata,
+                },
+              ],
             })
 
             return groups

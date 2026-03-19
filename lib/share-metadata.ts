@@ -1,0 +1,52 @@
+import { getActiveShareLink } from "@/lib/trackable-share-links"
+import { buildAbsoluteUrl } from "@/lib/site-config"
+
+const maxDescriptionLength = 160
+const maxFormTitleLength = 80
+const maxProjectNameLength = 48
+const maxCreatorNameLength = 48
+
+function trimText(value: string, maxLength: number) {
+  if (value.length <= maxLength) {
+    return value
+  }
+
+  return `${value.slice(0, maxLength - 1).trimEnd()}…`
+}
+
+export async function getShareMetadataContent(token: string) {
+  const shareLink = await getActiveShareLink(token)
+
+  if (!shareLink?.trackable) {
+    return null
+  }
+
+  const projectName = trimText(
+    shareLink.trackable.name.trim(),
+    maxProjectNameLength
+  )
+  const formTitle = trimText(
+    shareLink.trackable.activeForm?.title?.trim() || projectName,
+    maxFormTitleLength
+  )
+  const creatorName = trimText(
+    shareLink.trackable.owner.displayName?.trim() ||
+      shareLink.trackable.owner.primaryEmail?.trim() ||
+      "Trackable",
+    maxCreatorNameLength
+  )
+  const projectDescription = shareLink.trackable.description?.trim() || null
+  const description = trimText(
+    projectDescription ??
+      `Complete the ${formTitle} survey shared from ${projectName} on Trackable.`,
+    maxDescriptionLength
+  )
+
+  return {
+    creatorName,
+    description,
+    formTitle,
+    projectName,
+    shareUrl: buildAbsoluteUrl(`/share/${token}`),
+  }
+}

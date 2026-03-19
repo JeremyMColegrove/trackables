@@ -31,10 +31,15 @@ pnpm-debug.log*
 # env files
 .env*.local
 
+# compose bind-mounted data
+/data/*
+!/data/.gitkeep
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+.env.production
 .env.production

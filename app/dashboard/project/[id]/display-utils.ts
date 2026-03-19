@@ -2,6 +2,7 @@ import type {
   FormAnswerValue,
   FormFieldConfig,
   SubmissionMetadata,
+  UsageEventPayload,
 } from "@/db/schema/types"
 
 const relativeTimeFormatter = new Intl.RelativeTimeFormat("en", {
@@ -124,4 +125,52 @@ export function formatMetadataEntries(metadata: SubmissionMetadata | null) {
       label: key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase()),
       value: String(value),
     }))
+}
+
+function formatUsageValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return ""
+  }
+
+  if (typeof value === "string") {
+    return value
+  }
+
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return String(value)
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => formatUsageValue(entry)).filter(Boolean).join(", ")
+  }
+
+  return JSON.stringify(value)
+}
+
+export function formatUsagePayload(payload: UsageEventPayload) {
+  return Object.entries(payload)
+    .filter(([key, value]) => key !== "name" && value !== null && value !== undefined)
+    .map(([key, value]) => `${key}: ${formatUsageValue(value)}`)
+    .join("; ")
+}
+
+export function formatUsageUserAgent(metadata: string | null) {
+  if (!metadata) {
+    return "No user agent"
+  }
+
+  try {
+    const parsedMetadata = JSON.parse(metadata) as Record<string, unknown>
+    const userAgent = parsedMetadata.userAgent
+
+    return typeof userAgent === "string" && userAgent.trim()
+      ? userAgent
+      : "No user agent"
+  } catch {
+    return "No user agent"
+  }
 }
