@@ -3,30 +3,34 @@
 import { useState } from "react"
 
 import { DataTable } from "@/components/ui/data-table"
+import type { UsageEventUrlState } from "@/lib/usage-event-search"
 
-import type { UsageEventRow } from "./table-types"
+import type { UsageEventTableData } from "./table-types"
 import { UsageDetailsDialog } from "./usage-details-dialog"
-import { usageEventColumns } from "./usage-event-columns"
+import { getUsageEventColumns } from "./usage-event-columns"
 
 export function UsageEventsTable({
   data,
+  onFilterToGroup,
   title = "Ingestion Data",
-  description = "Aggregated API hits grouped by unique name and API key.",
+  description = "Derived API event rows from the current query and view settings.",
 }: {
-  data: UsageEventRow[]
+  data: UsageEventTableData
+  onFilterToGroup: (patch: Partial<UsageEventUrlState>) => void
   title?: React.ReactNode
-  description?: React.ReactNode
+  description?: string
 }) {
-  const [selectedUsageEvent, setSelectedUsageEvent] =
-    useState<UsageEventRow | null>(null)
+  const [selectedUsageEvent, setSelectedUsageEvent] = useState<
+    UsageEventTableData["rows"][number] | null
+  >(null)
 
   return (
     <>
       <DataTable
-        columns={usageEventColumns}
-        data={data}
+        columns={getUsageEventColumns(data.columns)}
+        data={data.rows}
         title={title}
-        description={description}
+        description={`${description} ${data.totalMatchedEvents} matching event${data.totalMatchedEvents === 1 ? "" : "s"} across ${data.totalGroupedRows} row${data.totalGroupedRows === 1 ? "" : "s"}.`}
         onRowClick={setSelectedUsageEvent}
         emptyMessage="No API usage has been recorded yet."
         initialPageSize={5}
@@ -34,6 +38,7 @@ export function UsageEventsTable({
       {selectedUsageEvent ? (
         <UsageDetailsDialog
           usageEvent={selectedUsageEvent}
+          onFilterToGroup={onFilterToGroup}
           open
           onOpenChange={(open) => {
             if (!open) {

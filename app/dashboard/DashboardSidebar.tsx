@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { useIsMobile } from "@/hooks/use-mobile"
+import { AppBrand } from "@/components/app-brand"
 import { Badge } from "@/components/ui/badge"
 import {
   Sidebar,
@@ -34,9 +35,7 @@ export function DashboardSidebar() {
   return (
     <Sidebar collapsible="offcanvas">
       <SidebarHeader className="border-b p-4">
-        <Link href="/" className="text-lg font-bold tracking-tighter">
-          Trackable.
-        </Link>
+        <AppBrand />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="p-3">

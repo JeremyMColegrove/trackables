@@ -4,8 +4,13 @@ import type {
   TrackableKind,
   TrackableSubmissionSnapshot,
   TrackableSettings,
-  UsageEventPayload,
 } from "@/db/schema/types"
+import type {
+  UsageEventFreshness,
+  UsageEventSourceSnapshot,
+  UsageEventTableColumn,
+  UsageEventTableRow,
+} from "@/lib/usage-event-search"
 
 export type TrackableDetails = {
   id: string
@@ -22,13 +27,13 @@ export type TrackableDetails = {
     id: string
     version: number
     title: string
+    description: string | null
     status: "draft" | "published" | "archived"
     submitLabel: string | null
     successMessage: string | null
     fields: TrackableFormSnapshot["fields"]
   } | null
   recentSubmissions: SubmissionRow[]
-  recentUsageEvents: UsageEventRow[]
   apiKeys: ApiKeyRow[]
   shareSettings: ShareSettings
 }
@@ -42,24 +47,18 @@ export type SubmissionRow = {
   submissionSnapshot: TrackableSubmissionSnapshot
 }
 
-export type UsageEventRow = {
-  name: string
-  totalHits: number
-  lastOccurredAt: string
-  apiKey: {
-    id: string
-    name: string
-    maskedKey: string
-  }
-  hits: UsageHitRow[]
+export type UsageEventRow = UsageEventTableRow
+export type UsageHitRow = UsageEventRow["hits"][number]
+export type UsageEventColumn = UsageEventTableColumn
+export type UsageEventTableData = {
+  columns: UsageEventColumn[]
+  rows: UsageEventRow[]
+  totalMatchedEvents: number
+  totalGroupedRows: number
+  availableAggregateFields: string[]
+  sourceSnapshot: UsageEventSourceSnapshot
 }
-
-export type UsageHitRow = {
-  id: string
-  occurredAt: string
-  payload: UsageEventPayload
-  metadata: string | null
-}
+export type UsageEventFreshnessState = UsageEventFreshness
 
 export type ApiKeyRow = {
   id: string

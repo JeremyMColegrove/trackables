@@ -153,6 +153,7 @@ export const trackableForms = pgTable(
       .references(() => trackableItems.id, { onDelete: "cascade" }),
     version: integer("version").notNull(),
     title: text("title").notNull(),
+    description: text("description"),
     status: trackableFormStatusEnum("status").default("draft").notNull(),
     submitLabel: text("submit_label"),
     successMessage: text("success_message"),

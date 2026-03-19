@@ -23,7 +23,7 @@ export function getApiKeyColumns({
       accessorKey: "name",
       header: ({ column }) => (
         <div className="pl-4">
-          <DataTableColumnHeader column={column} title="Key" />
+          <DataTableColumnHeader column={column} title="Connection" />
         </div>
       ),
       cell: ({ row }) => {
@@ -60,11 +60,11 @@ export function getApiKeyColumns({
     {
       accessorKey: "maskedKey",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Masked Key" />
+        <DataTableColumnHeader column={column} title="Key" />
       ),
       cell: ({ row }) => (
         <span className="font-mono text-sm text-muted-foreground">
-          {row.getValue("maskedKey")}
+          {formatShortMaskedKey(String(row.getValue("maskedKey")))}
         </span>
       ),
     },
@@ -78,17 +78,6 @@ export function getApiKeyColumns({
           {row.original.expiresAt
             ? formatDateTime(row.original.expiresAt)
             : "Never"}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "trackableUsageCount",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Trackable Usage" />
-      ),
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {row.original.trackableUsageCount}
         </span>
       ),
     },
@@ -116,7 +105,7 @@ export function getApiKeyColumns({
               variant="ghost"
               size="icon"
               disabled={apiKey.status === "revoked" || isRevoking}
-              title="Revoke API key"
+              title="Revoke connection"
               className="size-8 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               onClick={() => onRevoke(apiKey)}
             >
@@ -128,4 +117,14 @@ export function getApiKeyColumns({
       enableSorting: false,
     },
   ]
+}
+
+function formatShortMaskedKey(maskedKey: string) {
+  const normalizedKey = maskedKey.trim()
+
+  if (normalizedKey.length <= 3) {
+    return `***${normalizedKey}`
+  }
+
+  return `***${normalizedKey.slice(-3)}`
 }

@@ -35,7 +35,10 @@ export async function getShareMetadataContent(token: string) {
       "Trackable",
     maxCreatorNameLength
   )
-  const projectDescription = shareLink.trackable.description?.trim() || null
+  const projectDescription =
+    shareLink.trackable.activeForm?.description?.trim() ||
+    shareLink.trackable.description?.trim() ||
+    null
   const description = trimText(
     projectDescription ??
       `Complete the ${formTitle} survey shared from ${projectName} on Trackable.`,

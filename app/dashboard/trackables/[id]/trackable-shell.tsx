@@ -1,6 +1,7 @@
 "use client";
 
 import { RequireAuth } from "@/components/auth/require-auth";
+import { AppBrand } from "@/components/app-brand";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -43,6 +44,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext } from "react";
+import { SurveyShareDialog } from "./survey-share-dialog";
 import type { TrackableDetails } from "./table-types";
 
 type TrackableNavItem = {
@@ -94,7 +96,7 @@ function getTrackableNavItems(trackable: TrackableDetails): TrackableNavItem[] {
 		},
 		{
 			href: `${baseHref}/api-keys`,
-			label: "API Keys",
+			label: "Connection",
 			icon: KeyRound,
 			isActive: (pathname) => pathname.startsWith(`${baseHref}/api-keys`),
 		},
@@ -197,9 +199,7 @@ function TrackableSidebarNav({ trackable }: { trackable: TrackableDetails }) {
 	return (
 		<Sidebar variant="inset" collapsible="offcanvas">
 			<SidebarHeader className="gap-4 border-b px-4 py-4">
-				<Link href="/" className="text-lg font-bold tracking-tighter">
-					Trackable.
-				</Link>
+				<AppBrand />
 			</SidebarHeader>
 
 			<SidebarContent>
@@ -315,7 +315,16 @@ function TrackableLayoutContent({
 									{trackable.name}
 								</span>
 							</div>
-							<UserAccountButton />
+							<div className="flex items-center gap-3">
+								{trackable.kind === "survey" ? (
+									<SurveyShareDialog
+										trackableId={trackable.id}
+										activeForm={trackable.activeForm}
+										shareLinks={trackable.shareSettings.shareLinks}
+									/>
+								) : null}
+								<UserAccountButton />
+							</div>
 						</div>
 					</header>
 					{children}

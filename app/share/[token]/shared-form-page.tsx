@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useAuth } from "@clerk/nextjs"
 import { CheckCircle2, Heart, Loader2, ShieldCheck, Star, ThumbsUp } from "lucide-react"
@@ -84,6 +84,33 @@ function SharedFormUnavailable({
   )
 }
 
+function SharedFormStatusCard({
+  badge,
+  title,
+  description,
+}: {
+  badge: string
+  title: string
+  description: string
+}) {
+  return (
+    <div className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center px-4 py-10 md:px-6">
+      <Card className="w-full rounded-3xl border-border/60 bg-card/95 shadow-sm">
+        <CardContent className="flex flex-col items-center gap-4 px-6 py-12 text-center">
+          <div className="rounded-full bg-emerald-500/10 p-3 text-emerald-600">
+            <CheckCircle2 className="size-8" />
+          </div>
+          <Badge variant="outline" className="rounded-full px-3 py-1">
+            {badge}
+          </Badge>
+          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
+          <p className="max-w-lg text-sm text-muted-foreground">{description}</p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 type SharedTrackable = {
   id: string
   name: string
@@ -100,6 +127,7 @@ type SharedSettings = {
 type SharedForm = {
   id: string
   title: string
+  description: string | null
   status: "draft" | "published" | "archived"
   submitLabel: string | null
   successMessage: string | null
@@ -109,10 +137,12 @@ type SharedForm = {
 export function SharedFormPage({ token }: { token: string }) {
   const trpc = useTRPC()
   const { isLoaded, userId } = useAuth()
+  const lastViewerIdRef = useRef<string | null | undefined>(undefined)
   const sharedFormQuery = useQuery(
     trpc.trackables.getSharedForm.queryOptions(
       { token },
       {
+        enabled: isLoaded,
         retry: false,
       }
     )
@@ -123,8 +153,20 @@ export function SharedFormPage({ token }: { token: string }) {
       return
     }
 
+    const nextViewerId = userId ?? null
+
+    if (lastViewerIdRef.current === undefined) {
+      lastViewerIdRef.current = nextViewerId
+      return
+    }
+
+    if (lastViewerIdRef.current === nextViewerId) {
+      return
+    }
+
+    lastViewerIdRef.current = nextViewerId
     void sharedFormQuery.refetch()
-  }, [isLoaded, sharedFormQuery, userId])
+  }, [isLoaded, sharedFormQuery.refetch, userId])
 
   if (!isLoaded || sharedFormQuery.isLoading) {
     return <SharedFormSkeleton />
@@ -135,6 +177,19 @@ export function SharedFormPage({ token }: { token: string }) {
       <SharedFormUnavailable
         title="Link not found"
         description="This shared survey link is invalid, expired, or has been turned off."
+      />
+    )
+  }
+
+  if (
+    sharedFormQuery.error?.data?.code === "PRECONDITION_FAILED" &&
+    sharedFormQuery.error.message === "This shared form link is no longer active."
+  ) {
+    return (
+      <SharedFormStatusCard
+        badge="Link inactive"
+        title="This form link is no longer active."
+        description="The owner turned off this shared survey link, so it is no longer accepting responses."
       />
     )
   }
@@ -295,28 +350,19 @@ function SharedFormCard({
     const isRepeatVisit = submissionStatus === "already-submitted"
 
     return (
-      <div className="mx-auto flex min-h-[70vh] w-full max-w-3xl items-center px-4 py-10 md:px-6">
-        <Card className="w-full rounded-3xl border-border/60 bg-card/95 shadow-sm">
-          <CardContent className="flex flex-col items-center gap-4 px-6 py-12 text-center">
-            <div className="rounded-full bg-emerald-500/10 p-3 text-emerald-600">
-              <CheckCircle2 className="size-8" />
-            </div>
-            <Badge variant="outline" className="rounded-full px-3 py-1">
-              {isRepeatVisit ? "Already submitted" : "Response recorded"}
-            </Badge>
-            <h1 className="text-3xl font-semibold tracking-tight">
-              {isRepeatVisit
-                ? "You already submitted this form."
-                : form.successMessage ?? "Thanks for your response."}
-            </h1>
-            <p className="max-w-lg text-sm text-muted-foreground">
-              {isRepeatVisit
-                ? `Your response for ${trackable.name} has already been recorded.`
-                : `Your submission for ${trackable.name} has been saved.`}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <SharedFormStatusCard
+        badge={isRepeatVisit ? "Already submitted" : "Response recorded"}
+        title={
+          isRepeatVisit
+            ? "You already submitted this form."
+            : form.successMessage ?? "Thanks for your response."
+        }
+        description={
+          isRepeatVisit
+            ? `Your response for ${trackable.name} has already been recorded.`
+            : `Your submission for ${trackable.name} has been saved.`
+        }
+      />
     )
   }
 
@@ -340,7 +386,7 @@ function SharedFormCard({
             <div className="space-y-2">
               <h1 className="text-3xl font-semibold tracking-tight">{form.title}</h1>
               <p className="text-sm leading-6 text-muted-foreground">
-                {trackable.description ??
+                {form.description ??
                   "Fill out the form below and submit your response."}
               </p>
             </div>

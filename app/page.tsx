@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AppBrand } from "@/components/app-brand";
 import { LandingAuthActions } from "@/components/auth/landing-auth-actions";
 import { buildAbsoluteUrl, siteConfig } from "@/lib/site-config";
 
@@ -35,11 +36,7 @@ export default function Page() {
 		<main className="flex min-h-svh flex-col bg-background">
 			<header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
 				<div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 sm:px-8">
-					<div className="flex items-center gap-2">
-						<span className="text-lg font-bold tracking-tighter">
-							Trackable.
-						</span>
-					</div>
+					<AppBrand className="text-lg font-bold tracking-tighter" />
 					<LandingAuthActions section="navbar" />
 				</div>
 			</header>
@@ -47,8 +44,8 @@ export default function Page() {
 			<div className="relative flex flex-col items-center justify-center border-b py-24 sm:py-32">
 				<div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[32px_32px] opacity-20" />
 				<div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-6 text-center lg:px-8">
-					<h1 className="text-4xl font-semibold tracking-tighter text-foreground sm:text-6xl md:text-7xl">
-						Tracking for your team.
+					<h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tighter text-foreground sm:gap-4 sm:text-6xl md:text-7xl">
+						<span>Tracking for your team.</span>
 					</h1>
 
 					<LandingAuthActions section="hero" />
@@ -66,8 +63,8 @@ export default function Page() {
 								Simple interface
 							</h3>
 							<p className="mt-2 text-base leading-relaxed text-muted-foreground">
-								A clean dashboard that keeps trackables, responses, and usage easy
-								to manage without extra complexity.
+								A clean dashboard that keeps trackables, responses, and usage
+								easy to manage without extra complexity.
 							</p>
 						</div>
 						<div className="flex flex-col border-l-2 border-border pl-6">

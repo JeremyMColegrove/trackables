@@ -111,6 +111,7 @@ export const editableTrackableFormFieldSchema = z
 export const editableTrackableFormSchema = z
   .object({
     title: z.string().trim().min(1).max(120),
+    description: z.string().trim().max(280).nullable().optional(),
     status: z.enum(["draft", "published", "archived"]),
     submitLabel: z.string().trim().max(60).nullable().optional(),
     successMessage: z.string().trim().max(280).nullable().optional(),
@@ -157,6 +158,7 @@ export type EditableTrackableFormField = z.infer<
 export function createDefaultEditableForm(projectName?: string): EditableTrackableForm {
   return {
     title: projectName ? `${projectName} feedback form` : "Untitled form",
+    description: "Fill out the form below and submit your response.",
     status: "draft",
     submitLabel: "Submit response",
     successMessage: "Thanks for your response.",
@@ -269,6 +271,7 @@ export function normalizeEditableForm(
   return {
     ...form,
     title: form.title.trim(),
+    description: normalizeOptionalText(form.description),
     submitLabel: normalizeOptionalText(form.submitLabel),
     successMessage: normalizeOptionalText(form.successMessage),
     fields: form.fields.map((field, index) => ({
@@ -295,11 +298,12 @@ export function normalizeEditableForm(
 export function formSnapshotToEditableForm(
   form: Pick<
     TrackableFormSnapshot,
-    "title" | "status" | "submitLabel" | "successMessage" | "fields"
+    "title" | "description" | "status" | "submitLabel" | "successMessage" | "fields"
   >
 ): EditableTrackableForm {
   return {
     title: form.title,
+    description: form.description,
     status: form.status,
     submitLabel: form.submitLabel,
     successMessage: form.successMessage,

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { Copy } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
@@ -13,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { buildAbsoluteUrl } from "@/lib/site-config"
 import { useTRPC } from "@/trpc/client"
 
 import { getApiKeyColumns } from "./api-key-columns"
@@ -22,10 +24,12 @@ import type { ApiKeyRow } from "./table-types"
 export function ApiKeysTable({
   data,
   trackableId,
+  trackableName,
   headerButton,
 }: {
   data: ApiKeyRow[]
   trackableId: string
+  trackableName: string
   headerButton?: React.ReactNode
 }) {
   const [apiKeyToRevoke, setApiKeyToRevoke] = useState<ApiKeyRow | null>(null)
@@ -62,15 +66,20 @@ export function ApiKeysTable({
 
   return (
     <>
-      <DataTable
-        columns={columns}
-        data={data}
-        title="API Keys"
-        description="Manage API keys that can authorize tracking requests."
-        headerButton={headerButton ?? <CreateApiKeyDialog trackableId={trackableId} />}
-        emptyMessage="No API keys created yet."
-        initialPageSize={5}
-      />
+      <div className="space-y-6">
+        <ConnectionGuide trackableName={trackableName} />
+        <DataTable
+          columns={columns}
+          data={data}
+          title="API Keys"
+          description="Manage the API keys that can send usage events to this trackable."
+          headerButton={
+            headerButton ?? <CreateApiKeyDialog trackableId={trackableId} />
+          }
+          emptyMessage="No connections created yet."
+          initialPageSize={5}
+        />
+      </div>
       <Dialog
         open={Boolean(apiKeyToRevoke)}
         onOpenChange={(open) => {
@@ -81,11 +90,11 @@ export function ApiKeysTable({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Revoke API key</DialogTitle>
+            <DialogTitle>Revoke connection</DialogTitle>
             <DialogDescription>
               {apiKeyToRevoke
-                ? `Revoke "${apiKeyToRevoke.name}"? This key will stay visible in the table but can no longer be used.`
-                : "Revoke this API key?"}
+                ? `Revoke "${apiKeyToRevoke.name}"? This connection will stay visible in the table but can no longer be used.`
+                : "Revoke this connection?"}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -103,11 +112,78 @@ export function ApiKeysTable({
               onClick={handleConfirmRevoke}
               disabled={revokeApiKey.isPending}
             >
-              {revokeApiKey.isPending ? "Revoking..." : "Revoke key"}
+              {revokeApiKey.isPending ? "Revoking..." : "Revoke connection"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+function ConnectionGuide({ trackableName }: { trackableName: string }) {
+  const endpoint = buildAbsoluteUrl("/api/usage").toString()
+  const exampleName = JSON.stringify(trackableName)
+  const exampleCurl = [
+    `curl -X POST ${endpoint} \\`,
+    '  -H "Content-Type: application/json" \\',
+    '  -H "X-Api-Key: trk_live_your_connection_key" \\',
+    `  -d '{"name":${exampleName},"client":"web","environment":"production"}'`,
+  ].join("\n")
+  const [copiedValue, setCopiedValue] = useState<"endpoint" | "curl" | null>(
+    null
+  )
+
+  async function handleCopy(value: string, target: "endpoint" | "curl") {
+    await navigator.clipboard.writeText(value)
+    setCopiedValue(target)
+    window.setTimeout(() => {
+      setCopiedValue((current) => (current === target ? null : current))
+    }, 1500)
+  }
+
+  return (
+    <div className="space-y-4 text-sm text-muted-foreground">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-foreground">
+            API Endpoint
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1.5"
+            onClick={() => void handleCopy(endpoint, "endpoint")}
+          >
+            <Copy className="size-3.5" />
+            {copiedValue === "endpoint" ? "Copied" : "Copy"}
+          </Button>
+        </div>
+        <pre className="overflow-x-auto rounded-md border bg-muted/30 p-3 font-mono text-xs text-foreground">
+{endpoint}
+        </pre>
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-foreground">
+            cURL Example
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1.5"
+            onClick={() => void handleCopy(exampleCurl, "curl")}
+          >
+            <Copy className="size-3.5" />
+            {copiedValue === "curl" ? "Copied" : "Copy"}
+          </Button>
+        </div>
+        <pre className="overflow-x-auto rounded-md border bg-muted/30 p-3 font-mono text-xs text-foreground">
+{exampleCurl}
+        </pre>
+      </div>
+    </div>
   )
 }

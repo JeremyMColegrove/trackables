@@ -1,38 +1,27 @@
+/** biome-ignore-all lint/correctness/useUniqueElementIds: <explanation> */
 "use client";
-
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-	ArrowDown,
-	ArrowUp,
-	CheckSquare,
-	Edit3,
-	Eye,
-	FileText,
-	FormInput,
-	Plus,
-	Star,
-	Trash2,
-} from "lucide-react";
-import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-	Card,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuGroup,
+	ContextMenuItem,
+	ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import {
 	Dialog,
 	DialogContent,
-	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { TrackableFormSnapshot } from "@/db/schema/types";
 import {
@@ -49,10 +38,21 @@ import {
 } from "@/lib/project-form-builder";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
-
-import { formatFieldConfigSummary, formatFieldKind } from "./display-utils";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+	ArrowDown,
+	ArrowUp,
+	CheckSquare,
+	Edit3,
+	FileText,
+	FormInput,
+	Plus,
+	Star,
+	Trash2,
+} from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { formatFieldKind } from "./display-utils";
 
 type RatingConfig = Extract<
 	EditableTrackableFormField["config"],
@@ -108,188 +108,12 @@ function getFieldIcon(kind: EditableTrackableFormField["kind"]) {
 	}
 }
 
-function PreviewDialog({ draft }: { draft: EditableTrackableForm }) {
-	return (
-		<Dialog>
-			<DialogTrigger asChild>
-				<Button variant="outline" type="button">
-					<Eye className="size-4" />
-					Preview
-				</Button>
-			</DialogTrigger>
-			<DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto sm:max-w-2xl">
-				<DialogHeader>
-					<DialogTitle>{draft.title}</DialogTitle>
-					<DialogDescription>
-						Preview the current form draft before saving a new version.
-					</DialogDescription>
-				</DialogHeader>
-				<div className="space-y-5">
-					{draft.fields.length === 0 ? (
-						<div className="rounded-lg border border-dashed bg-muted/50 p-8 text-center text-sm text-muted-foreground">
-							This form does not have any fields yet.
-						</div>
-					) : (
-						draft.fields.map((field) => (
-							<Card
-								key={field.id}
-								className="p-4 shadow-none"
-							>
-								<div className="mb-3 flex items-start justify-between gap-4">
-									<div>
-										<p className="font-medium">{field.label}</p>
-										{field.description ? (
-											<p className="text-sm text-muted-foreground">
-												{field.description}
-											</p>
-										) : null}
-									</div>
-									<Badge variant="outline">{formatFieldKind(field.kind)}</Badge>
-								</div>
-								{isRatingField(field) ? (
-									<div className="flex gap-2">
-										{Array.from({ length: field.config.scale }).map(
-											(_, index) => (
-												<button
-													key={index}
-													type="button"
-													disabled
-													className="rounded-full border border-border p-2 text-muted-foreground"
-												>
-													<Star className="size-4" />
-												</button>
-											),
-										)}
-									</div>
-								) : null}
-								{isCheckboxesField(field) ? (
-									<div className="space-y-2">
-										{field.config.options.map((option) => (
-											<label
-												key={option.id}
-												className="flex items-center gap-3 text-sm"
-											>
-												<Checkbox disabled />
-												<span>{option.label}</span>
-											</label>
-										))}
-										{field.config.allowOther ? (
-											<label className="flex items-center gap-3 text-sm">
-												<Checkbox disabled />
-												<span>Other</span>
-											</label>
-										) : null}
-									</div>
-								) : null}
-								{isNotesField(field) ? (
-									<Textarea
-										disabled
-										placeholder={
-											field.config.placeholder ?? "Write your response..."
-										}
-										className="min-h-24 resize-none"
-									/>
-								) : null}
-								{isShortTextField(field) ? (
-									<Input
-										disabled
-										placeholder={
-											field.config.placeholder ?? "Type your answer..."
-										}
-									/>
-								) : null}
-							</Card>
-						))
-					)}
-					<Button disabled type="button">
-						{draft.submitLabel ?? "Submit response"}
-					</Button>
-					{draft.successMessage ? (
-						<p className="text-sm text-muted-foreground">
-							{draft.successMessage}
-						</p>
-					) : null}
-				</div>
-			</DialogContent>
-		</Dialog>
-	);
-}
-
-function FormSettingsDialog({
-	draft,
-	onChange,
-}: {
-	draft: EditableTrackableForm;
-	onChange: (nextDraft: EditableTrackableForm) => void;
-}) {
-	return (
-		<Dialog>
-			<DialogTrigger asChild>
-				<Button type="button" variant="outline">
-					<Edit3 className="size-3.5" />
-					Edit
-				</Button>
-			</DialogTrigger>
-			<DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-				<DialogHeader>
-					<DialogTitle>Edit form settings</DialogTitle>
-				</DialogHeader>
-
-				<div className="grid gap-4">
-					<div className="space-y-2">
-						<Label>Form title</Label>
-						<p className="text-xs text-muted-foreground">
-							The heading shown at the top of the form.
-						</p>
-						<Input
-							value={draft.title}
-							placeholder="Form title"
-							onChange={(event) =>
-								onChange({
-									...draft,
-									title: event.target.value,
-								})
-							}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label>Submit button label</Label>
-						<p className="text-xs text-muted-foreground">
-							The text people click to send their response.
-						</p>
-						<Input
-							value={draft.submitLabel ?? ""}
-							placeholder="Submit button label"
-							onChange={(event) =>
-								onChange({
-									...draft,
-									submitLabel: event.target.value,
-								})
-							}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label>Success message</Label>
-						<p className="text-xs text-muted-foreground">
-							The confirmation message shown after submission.
-						</p>
-						<Textarea
-							value={draft.successMessage ?? ""}
-							placeholder="Success message"
-							onChange={(event) =>
-								onChange({
-									...draft,
-									successMessage: event.target.value,
-								})
-							}
-							className="min-h-24 resize-none"
-						/>
-					</div>
-				</div>
-			</DialogContent>
-		</Dialog>
-	);
-}
+const FIELD_TYPE_OPTIONS = [
+	{ kind: "rating", label: "Quick Rating" },
+	{ kind: "short_text", label: "Short Text" },
+	{ kind: "notes", label: "Notes / Input" },
+	{ kind: "checkboxes", label: "Checkbox" },
+] as const;
 
 function FieldPreview({
 	field,
@@ -307,22 +131,22 @@ function FieldPreview({
 	onRemove: (index: number) => void;
 }) {
 	return (
-		<Card className="p-4 shadow-sm">
+		<div className="space-y-4">
 			<div className="flex items-start justify-between gap-4">
 				<div className="space-y-1">
-					<label className="block text-sm font-medium">
-						{field.label || "Untitled field"}
-					</label>
+					<div className="flex flex-wrap items-center gap-2">
+						<label className="block text-lg font-medium">
+							{field.label || "Untitled field"}
+						</label>
+						<Badge variant="outline" className="rounded-full">
+							{field.required ? "Required" : formatFieldKind(field.kind)}
+						</Badge>
+					</div>
 					{field.description ? (
-						<p className="line-clamp-2 text-xs text-muted-foreground">
-							{field.description}
-						</p>
+						<p className="text-sm text-muted-foreground">{field.description}</p>
 					) : null}
 				</div>
 				<div className="flex items-center gap-2">
-					<Badge variant="outline" className="capitalize">
-						{formatFieldKind(field.kind)}
-					</Badge>
 					<Dialog>
 						<DialogTrigger asChild>
 							<Button type="button" size="sm" variant="outline">
@@ -332,15 +156,12 @@ function FieldPreview({
 						</DialogTrigger>
 						<DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
 							<DialogHeader>
-								<DialogTitle>Edit field</DialogTitle>
+								<DialogTitle>Field</DialogTitle>
 							</DialogHeader>
 
 							<div className="grid gap-3">
 								<div className="space-y-2">
-									<Label>Field label</Label>
-									<p className="text-xs text-muted-foreground">
-										The question or prompt shown to the responder.
-									</p>
+									<Label>Label</Label>
 									<Input
 										value={field.label}
 										placeholder="Field label"
@@ -351,9 +172,6 @@ function FieldPreview({
 								</div>
 								<div className="space-y-2">
 									<Label>Description</Label>
-									<p className="text-xs text-muted-foreground">
-										Optional helper text shown under the field.
-									</p>
 									<Textarea
 										value={field.description ?? ""}
 										placeholder="Description"
@@ -367,12 +185,7 @@ function FieldPreview({
 									/>
 								</div>
 								<div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-									<div className="space-y-0.5">
-										<Label>Required</Label>
-										<p className="text-xs text-muted-foreground">
-											Require a response before the form can be submitted.
-										</p>
-									</div>
+									<Label>Required</Label>
 									<Switch
 										checked={field.required}
 										onCheckedChange={(checked) =>
@@ -383,10 +196,7 @@ function FieldPreview({
 
 								{isRatingField(field) ? (
 									<div className="space-y-2">
-										<Label>Rating scale</Label>
-										<p className="text-xs text-muted-foreground">
-											How many points are available in the rating.
-										</p>
+										<Label>Scale</Label>
 										<Input
 											type="number"
 											min={3}
@@ -409,9 +219,6 @@ function FieldPreview({
 								{isNotesField(field) || isShortTextField(field) ? (
 									<div className="space-y-2">
 										<Label>Placeholder</Label>
-										<p className="text-xs text-muted-foreground">
-											Optional example text shown inside the field.
-										</p>
 										<Input
 											value={field.config.placeholder ?? ""}
 											placeholder="Placeholder"
@@ -430,12 +237,7 @@ function FieldPreview({
 
 								{isCheckboxesField(field) ? (
 									<div className="space-y-2">
-										<div className="space-y-1">
-											<Label>Options</Label>
-											<p className="text-xs text-muted-foreground">
-												Add the choices people can select for this field.
-											</p>
-										</div>
+										<Label>Options</Label>
 										{field.config.options.map((option, optionIndex) => (
 											<div
 												key={option.id}
@@ -544,39 +346,34 @@ function FieldPreview({
 				</div>
 			</div>
 
-			<div className="mt-4 rounded-md border border-dashed bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-				{formatFieldConfigSummary(field.config)}
-				{field.required ? " · Required" : " · Optional"}
-			</div>
-
 			{isRatingField(field) ? (
-				<div className="mt-3 flex gap-1.5">
+				<div className="flex flex-wrap gap-2">
 					{Array.from({ length: field.config.scale }).map((_, indexValue) => (
-						<div
+						<button
 							key={indexValue}
-							className="rounded-full border border-border p-1.5 text-muted-foreground"
+							type="button"
+							disabled
+							className="flex size-11 items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
 						>
-							<Star className="size-3.5" />
-						</div>
+							<Star className="size-4" />
+						</button>
 					))}
 				</div>
 			) : null}
 
 			{isCheckboxesField(field) ? (
-				<div className="mt-3 space-y-1.5">
-					{field.config.options.slice(0, 3).map((option) => (
-						<label
-							key={option.id}
-							className="flex items-center gap-2.5 text-xs"
-						>
+				<div className="space-y-2">
+					{field.config.options.map((option) => (
+						<label key={option.id} className="flex items-center gap-3 text-sm">
 							<Checkbox disabled />
 							<span>{option.label}</span>
 						</label>
 					))}
-					{field.config.options.length > 3 ? (
-						<p className="text-xs text-muted-foreground">
-							+{field.config.options.length - 3} more options
-						</p>
+					{field.config.allowOther ? (
+						<label className="flex items-center gap-3 text-sm">
+							<Checkbox disabled />
+							<span>Other</span>
+						</label>
 					) : null}
 				</div>
 			) : null}
@@ -584,7 +381,7 @@ function FieldPreview({
 			{isNotesField(field) ? (
 				<Textarea
 					disabled
-					className="mt-3 min-h-16 resize-none text-sm"
+					className="min-h-24 resize-none"
 					placeholder={field.config.placeholder ?? "Write your response..."}
 				/>
 			) : null}
@@ -592,26 +389,27 @@ function FieldPreview({
 			{isShortTextField(field) ? (
 				<Input
 					disabled
-					className="mt-3 text-sm"
 					placeholder={field.config.placeholder ?? "Type your answer..."}
 				/>
 			) : null}
-		</Card>
+		</div>
 	);
 }
 
 export function FormBuilder({
 	trackableId,
 	trackableName,
+	trackableDescription,
 	activeForm,
 }: {
 	trackableId: string;
 	trackableName: string;
+	trackableDescription: string | null;
 	activeForm: TrackableFormSnapshot | null;
 }) {
+	const addFieldTriggerRef = useRef<HTMLButtonElement | null>(null);
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
-	const [saveError, setSaveError] = useState<string | null>(null);
 	const [draft, setDraft] = useState<EditableTrackableForm>(() =>
 		activeForm
 			? formSnapshotToEditableForm(activeForm)
@@ -621,13 +419,12 @@ export function FormBuilder({
 	const saveForm = useMutation(
 		trpc.trackables.saveForm.mutationOptions({
 			onSuccess: async () => {
-				setSaveError(null);
 				await queryClient.invalidateQueries({
 					queryKey: trpc.trackables.getById.queryKey({ id: trackableId }),
 				});
 			},
 			onError: (error) => {
-				setSaveError(error.message);
+				toast.error(error.message);
 			},
 		}),
 	);
@@ -713,14 +510,13 @@ export function FormBuilder({
 				? formSnapshotToEditableForm(activeForm)
 				: createDefaultEditableForm(trackableName),
 		);
-		setSaveError(null);
 	}
 
 	function handleSave() {
 		const result = editableTrackableFormSchema.safeParse(normalizedDraft);
 
 		if (!result.success) {
-			setSaveError(
+			toast.error(
 				result.error.issues[0]?.message ?? "Unable to save the form.",
 			);
 			return;
@@ -732,97 +528,81 @@ export function FormBuilder({
 		});
 	}
 
-	const validationMessage = saveError
-		? saveError
-		: validationResult.success
-			? isDirty
-				? "Unsaved changes ready for the next version."
-				: "No unpublished changes."
-			: validationResult.error.issues[0]?.message;
+	const validationMessage = validationResult.success
+		? isDirty
+			? "Unsaved changes ready for the next version."
+			: "No unpublished changes."
+		: "Resolve validation issues before saving.";
 
 	return (
-		<Card className="shadow-sm">
-			<CardHeader className="flex flex-row items-center justify-between border-b pb-4">
-				<div>
-					<CardTitle className="text-lg">{draft.title}</CardTitle>
-					<CardDescription>
-						{activeForm
-							? `Version ${activeForm.version}`
-							: "Draft form ready to configure."}
-					</CardDescription>
-				</div>
-				<div className="flex items-center gap-2">
+		<div className="flex flex-col gap-6">
+			<div className="mx-auto flex w-full max-w-4xl items-center justify-end gap-2">
+				<div className="mr-auto">
 					<div
 						className={cn(
-							"mr-2 hidden text-sm sm:block",
-							saveError || !validationResult.success
+							"hidden text-sm sm:block",
+							!validationResult.success
 								? "font-medium text-destructive"
 								: "text-muted-foreground",
 						)}
 					>
 						{validationMessage}
 					</div>
-					<PreviewDialog draft={normalizedDraft} />
-					<FormSettingsDialog
-						draft={draft}
-						onChange={(nextDraft) => setDraft(nextDraft)}
-					/>
-					<Button
-						type="button"
-						variant="outline"
-						onClick={resetDraft}
-						disabled={!isDirty || saveForm.isPending}
-					>
-						Reset
-					</Button>
-					<Button
-						type="button"
-						onClick={handleSave}
-						disabled={!isDirty || saveForm.isPending}
-					>
-						{saveForm.isPending ? "Saving..." : "Save changes"}
-					</Button>
 				</div>
-			</CardHeader>
+				<Button
+					type="button"
+					variant="outline"
+					onClick={resetDraft}
+					disabled={!isDirty || saveForm.isPending}
+				>
+					Reset
+				</Button>
+				<Button
+					type="button"
+					onClick={handleSave}
+					disabled={!isDirty || saveForm.isPending}
+				>
+					{saveForm.isPending ? "Saving..." : "Save changes"}
+				</Button>
+			</div>
 
-			<div className="p-0">
-				<div className="grid grid-cols-1 divide-y md:grid-cols-4 md:divide-x md:divide-y-0">
-					<div className="space-y-4 bg-muted/20 p-6">
-						<div className="space-y-2">
-							<h3 className="text-sm font-medium text-muted-foreground">
-								Available Fields
-							</h3>
-							{(
-								[
-									{ kind: "rating", label: "Quick Rating" },
-									{ kind: "short_text", label: "Short Text" },
-									{ kind: "notes", label: "Notes / Input" },
-									{ kind: "checkboxes", label: "Checkbox" },
-								] as const
-							).map((entry) => (
-								<button
-									key={entry.kind}
-									type="button"
-									onClick={() => addField(entry.kind)}
-									className="flex w-full items-center gap-2 rounded-lg border bg-background p-3 text-sm shadow-sm transition-colors hover:bg-muted/50"
-								>
-									{getFieldIcon(entry.kind)}
-									{entry.label}
-								</button>
-							))}
-						</div>
+			<div className="mx-auto w-full max-w-4xl">
+				<div className="flex flex-col gap-8">
+					<div className="flex flex-col gap-2">
+						<Label
+							htmlFor="form-title"
+							className="text-xs uppercase tracking-wide text-muted-foreground"
+						>
+							Form title
+						</Label>
+						<Input
+							id="form-title"
+							value={draft.title}
+							placeholder="Form title"
+							onChange={(event) =>
+								setDraft((currentDraft) => ({
+									...currentDraft,
+									title: event.target.value,
+								}))
+							}
+						/>
+						<Textarea
+							value={draft.description ?? ""}
+							placeholder="Your form description..."
+							onChange={(event) =>
+								setDraft((currentDraft) => ({
+									...currentDraft,
+									description: event.target.value,
+								}))
+							}
+							rows={2}
+						/>
 					</div>
 
-					<div className="col-span-1 space-y-6 bg-muted/5 p-6 md:col-span-3 md:p-8">
-						<div className="mx-auto max-w-2xl space-y-4">
-							{draft.fields.length === 0 ? (
-								<div className="rounded-lg border border-dashed bg-muted/50 p-12 text-center text-sm text-muted-foreground">
-									No form fields yet. Add a field from the palette on the left.
-								</div>
-							) : (
-								draft.fields.map((field, index) => (
+					{draft.fields.length > 0
+						? draft.fields.map((field, index) => (
+								<div key={field.id} className="flex flex-col gap-8">
 									<FieldPreview
-										key={field.id}
 										field={field}
 										index={index}
 										total={draft.fields.length}
@@ -830,12 +610,63 @@ export function FormBuilder({
 										onMove={moveField}
 										onRemove={removeField}
 									/>
-								))
-							)}
-						</div>
-					</div>
+									{index < draft.fields.length - 1 ? (
+										<div className="border-b border-border/50" />
+									) : null}
+								</div>
+							))
+						: null}
+
+					<Separator />
+
+					<ContextMenu>
+						<ContextMenuTrigger asChild>
+							<button
+								ref={addFieldTriggerRef}
+								type="button"
+								className="flex items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/50 px-4 py-5 text-sm text-muted-foreground transition-colors hover:bg-muted"
+								onClick={(event) => {
+									event.preventDefault();
+									addFieldTriggerRef.current?.dispatchEvent(
+										new MouseEvent("contextmenu", {
+											bubbles: true,
+											cancelable: true,
+											clientX: event.clientX,
+											clientY: event.clientY,
+											view: window,
+										}),
+									);
+								}}
+							>
+								<Plus className="size-4" />
+								<span>Click to add new form field</span>
+							</button>
+						</ContextMenuTrigger>
+						<ContextMenuContent>
+							<ContextMenuGroup>
+								{FIELD_TYPE_OPTIONS.map((entry) => (
+									<ContextMenuItem
+										key={entry.kind}
+										onClick={() => addField(entry.kind)}
+									>
+										{getFieldIcon(entry.kind)}
+										<span>{entry.label}</span>
+									</ContextMenuItem>
+								))}
+							</ContextMenuGroup>
+						</ContextMenuContent>
+					</ContextMenu>
+
+					<Button disabled type="button" className="self-start">
+						{draft.submitLabel ?? "Submit response"}
+					</Button>
+					{draft.successMessage ? (
+						<p className="text-sm text-muted-foreground">
+							{draft.successMessage}
+						</p>
+					) : null}
 				</div>
 			</div>
-		</Card>
+		</div>
 	);
 }

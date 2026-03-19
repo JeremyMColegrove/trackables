@@ -63,6 +63,7 @@ export interface TrackableFormSnapshot {
   id: string
   version: number
   title: string
+  description: string | null
   status: "draft" | "published" | "archived"
   submitLabel: string | null
   successMessage: string | null

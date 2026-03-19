@@ -21,12 +21,18 @@ import {
   saveTrackableFormSchema,
 } from "@/lib/project-form-builder"
 import {
+  usageEventFreshnessSchema,
+  usageEventSearchInputSchema,
+  usageEventSourceSnapshotSchema,
+} from "@/lib/usage-event-search"
+import {
   buildSubmissionSnapshot,
   publicFormSubmissionSchema,
   requiresResponderEmail,
 } from "@/lib/trackable-form-submission"
 import {
   getActiveShareLink,
+  getShareLinkByToken,
   requiresAuthenticatedSharedFormAccess,
 } from "@/lib/trackable-share-links"
 import { hasAuthenticatedSharedFormSubmission } from "@/lib/shared-form-submissions"
@@ -41,7 +47,13 @@ import {
   resolveApiKeyExpiration,
 } from "@/server/api-keys"
 import { assertProjectAccess } from "@/server/project-access"
-import type { TrackableKind, UsageEventPayload } from "@/db/schema/types"
+import {
+  getTrackableUsageAggregateFields,
+  getTrackableUsageEvents,
+  getTrackableUsageSourceSnapshot,
+} from "@/server/usage-tracking/usage-event-query"
+import { UsageEventTableProcessor } from "@/server/usage-tracking/usage-event-table-processor"
+import type { TrackableKind } from "@/db/schema/types"
 
 const accessRoleSchema = z.enum(["submit", "view", "manage"])
 const trackableKindSchema = z.enum(["survey", "api_ingestion"])
@@ -63,16 +75,6 @@ function generateSlug(name: string) {
 
 function createShareToken() {
   return randomBytes(18).toString("base64url")
-}
-
-function extractUsageEventName(payload: UsageEventPayload) {
-  const payloadName = payload.name
-
-  if (typeof payloadName === "string" && payloadName.trim().length > 0) {
-    return payloadName.trim()
-  }
-
-  return "Unnamed"
 }
 
 function assertTrackableKind(
@@ -136,7 +138,7 @@ export const trackablesRouter = createTRPCRouter({
         })
       }
 
-      const [submissions, usageEvents, ownedApiKeys, usageCountsByKey] =
+      const [submissions, ownedApiKeys, usageCountsByKey] =
         await Promise.all([
           db.query.trackableFormSubmissions.findMany({
             where: eq(trackableFormSubmissions.trackableId, project.id),
@@ -146,20 +148,6 @@ export const trackablesRouter = createTRPCRouter({
               submittedByUser: {
                 columns: {
                   displayName: true,
-                },
-              },
-            },
-          }),
-          db.query.trackableApiUsageEvents.findMany({
-            where: eq(trackableApiUsageEvents.trackableId, project.id),
-            orderBy: [desc(trackableApiUsageEvents.occurredAt)],
-            with: {
-              apiKey: {
-                columns: {
-                  id: true,
-                  name: true,
-                  keyPrefix: true,
-                  lastFour: true,
                 },
               },
             },
@@ -189,87 +177,6 @@ export const trackablesRouter = createTRPCRouter({
         ])
       )
 
-      const aggregatedUsageEvents = Array.from(
-        usageEvents
-          .reduce<
-            Map<
-              string,
-              {
-                apiKey: {
-                  id: string
-                  name: string
-                  maskedKey: string
-                }
-                name: string
-                totalHits: number
-                lastOccurredAt: string
-                hits: {
-                  id: string
-                  occurredAt: string
-                  payload: UsageEventPayload
-                  metadata: string | null
-                }[]
-              }
-            >
-          >((groups, event) => {
-            const apiKey = {
-              id: event.apiKey.id,
-              name: event.apiKey.name,
-              maskedKey: `${event.apiKey.keyPrefix}...${event.apiKey.lastFour}`,
-            }
-            const name = extractUsageEventName(event.payload)
-            const groupKey = `${apiKey.id}:${name.toLowerCase()}`
-            const existingGroup = groups.get(groupKey)
-            const occurredAt = event.occurredAt.toISOString()
-
-            if (existingGroup) {
-              existingGroup.totalHits += 1
-              existingGroup.hits.push({
-                id: event.id,
-                occurredAt,
-                payload: event.payload,
-                metadata: event.metadata,
-              })
-
-              if (
-                new Date(existingGroup.lastOccurredAt).getTime() <
-                event.occurredAt.getTime()
-              ) {
-                existingGroup.lastOccurredAt = occurredAt
-              }
-
-              return groups
-            }
-
-            groups.set(groupKey, {
-              apiKey,
-              name,
-              totalHits: 1,
-              lastOccurredAt: occurredAt,
-              hits: [
-                {
-                  id: event.id,
-                  occurredAt,
-                  payload: event.payload,
-                  metadata: event.metadata,
-                },
-              ],
-            })
-
-            return groups
-          }, new Map())
-          .values()
-      ).sort((left, right) => {
-        if (right.totalHits !== left.totalHits) {
-          return right.totalHits - left.totalHits
-        }
-
-        return (
-          new Date(right.lastOccurredAt).getTime() -
-          new Date(left.lastOccurredAt).getTime()
-        )
-      })
-
       return {
         id: project.id,
         kind: project.kind,
@@ -286,6 +193,7 @@ export const trackablesRouter = createTRPCRouter({
               id: project.activeForm.id,
               version: project.activeForm.version,
               title: project.activeForm.title,
+              description: project.activeForm.description,
               status: project.activeForm.status,
               submitLabel: project.activeForm.submitLabel,
               successMessage: project.activeForm.successMessage,
@@ -305,7 +213,6 @@ export const trackablesRouter = createTRPCRouter({
           metadata: submission.metadata,
           submissionSnapshot: submission.submissionSnapshot,
         })),
-        recentUsageEvents: aggregatedUsageEvents,
         apiKeys: ownedApiKeys.map((key) => {
           const trackableUsage = usageByKey.get(key.id)
 
@@ -351,6 +258,73 @@ export const trackablesRouter = createTRPCRouter({
         },
       }
     }),
+  getUsageEventTable: protectedProcedure
+    .input(usageEventSearchInputSchema)
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.auth.userId
+
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" })
+      }
+
+      await assertProjectAccess(input.trackableId, userId, "view")
+
+      const [events, sourceSnapshot, availableAggregateFields] = await Promise.all([
+        getTrackableUsageEvents(input),
+        getTrackableUsageSourceSnapshot(input.trackableId),
+        getTrackableUsageAggregateFields(input.trackableId),
+      ])
+
+      const tableResult = new UsageEventTableProcessor(
+        events.map((event) => ({
+          id: event.id,
+          occurredAt: event.occurredAt,
+          payload: event.payload,
+          metadata: event.metadata,
+          apiKey: {
+            id: event.apiKey.id,
+            name: event.apiKey.name,
+            maskedKey: `${event.apiKey.keyPrefix}...${event.apiKey.lastFour}`,
+          },
+        })),
+        input,
+        sourceSnapshot
+      ).process()
+
+      return {
+        ...tableResult,
+        availableAggregateFields,
+      }
+    }),
+  getUsageEventFreshness: protectedProcedure
+    .input(
+      z.object({
+        trackableId: z.string().uuid(),
+        sourceSnapshot: usageEventSourceSnapshotSchema,
+      })
+    )
+    .output(usageEventFreshnessSchema)
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.auth.userId
+
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" })
+      }
+
+      await assertProjectAccess(input.trackableId, userId, "view")
+
+      const currentSnapshot = await getTrackableUsageSourceSnapshot(
+        input.trackableId
+      )
+
+      return {
+        hasUpdates:
+          currentSnapshot.totalEventCount !== input.sourceSnapshot.totalEventCount ||
+          currentSnapshot.latestOccurredAt !== input.sourceSnapshot.latestOccurredAt,
+        latestOccurredAt: currentSnapshot.latestOccurredAt,
+        latestEventCount: currentSnapshot.totalEventCount,
+      }
+    }),
   getSharedForm: publicProcedure
     .input(
       z.object({
@@ -361,6 +335,15 @@ export const trackablesRouter = createTRPCRouter({
       const shareLink = await getActiveShareLink(input.token)
 
       if (!shareLink) {
+        const existingShareLink = await getShareLinkByToken(input.token)
+
+        if (existingShareLink?.revokedAt) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "This shared form link is no longer active.",
+          })
+        }
+
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "This shared form could not be found.",
@@ -406,6 +389,7 @@ export const trackablesRouter = createTRPCRouter({
           id: form.id,
           version: form.version,
           title: form.title,
+          description: form.description,
           status: form.status,
           submitLabel: form.submitLabel,
           successMessage: form.successMessage,
@@ -436,6 +420,15 @@ export const trackablesRouter = createTRPCRouter({
       const shareLink = await getActiveShareLink(input.token)
 
       if (!shareLink) {
+        const existingShareLink = await getShareLinkByToken(input.token)
+
+        if (existingShareLink?.revokedAt) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "This shared form link is no longer active.",
+          })
+        }
+
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "This shared form could not be found.",
@@ -506,6 +499,7 @@ export const trackablesRouter = createTRPCRouter({
             id: form.id,
             version: form.version,
             title: form.title,
+            description: form.description,
             status: form.status,
             submitLabel: form.submitLabel,
             successMessage: form.successMessage,
@@ -603,6 +597,7 @@ export const trackablesRouter = createTRPCRouter({
           id: true,
           kind: true,
           name: true,
+          description: true,
         },
       })
 
@@ -635,6 +630,9 @@ export const trackablesRouter = createTRPCRouter({
             trackableId: trackableRecord.id,
             version: nextVersion,
             title: `${trackableRecord.name} feedback form`,
+            description:
+              trackableRecord.description ??
+              "Fill out the form below and submit your response.",
             status: "draft",
             submitLabel: "Submit response",
             successMessage: "Thanks for your response.",
@@ -655,6 +653,7 @@ export const trackablesRouter = createTRPCRouter({
         id: form.id,
         version: form.version,
         title: form.title,
+        description: form.description,
         status: form.status,
         submitLabel: form.submitLabel,
         successMessage: form.successMessage,
@@ -700,6 +699,7 @@ export const trackablesRouter = createTRPCRouter({
             trackableId: trackable.id,
             version: nextVersion,
             title: normalizedForm.title,
+            description: normalizedForm.description,
             status: normalizedForm.status,
             submitLabel: normalizedForm.submitLabel,
             successMessage: normalizedForm.successMessage,
@@ -734,6 +734,7 @@ export const trackablesRouter = createTRPCRouter({
             id: createdForm.id,
             version: createdForm.version,
             title: createdForm.title,
+            description: createdForm.description,
             status: createdForm.status,
             submitLabel: createdForm.submitLabel,
             successMessage: createdForm.successMessage,
@@ -756,6 +757,7 @@ export const trackablesRouter = createTRPCRouter({
           id: createdForm.id,
           version: createdForm.version,
           title: createdForm.title,
+          description: createdForm.description,
           status: createdForm.status,
           submitLabel: createdForm.submitLabel,
           successMessage: createdForm.successMessage,
@@ -801,6 +803,9 @@ export const trackablesRouter = createTRPCRouter({
               trackableId: createdTrackable.id,
               version: 1,
               title: `${createdTrackable.name} feedback form`,
+              description:
+                createdTrackable.description ??
+                "Fill out the form below and submit your response.",
               status: "draft",
               submitLabel: "Submit response",
               successMessage: "Thanks for your response.",

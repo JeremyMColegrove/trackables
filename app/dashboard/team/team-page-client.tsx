@@ -54,7 +54,7 @@ function getDisplayName(member: {
 function TeamPageSkeleton() {
 	return (
 		<main className="flex-1">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-8 sm:px-8">
+			<div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-8 sm:px-8">
 				<Skeleton className="h-16 w-64" />
 				<Skeleton className="h-[28rem] rounded-xl" />
 			</div>
@@ -367,7 +367,7 @@ function TeamPageContent() {
 
 	return (
 		<main className="flex-1">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-8 sm:px-8">
+			<div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-8 sm:px-8">
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"></div>
 
 				<DataTable

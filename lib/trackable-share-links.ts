@@ -1,13 +1,7 @@
 import { db } from "@/db"
 
-export async function getActiveShareLink(token: string) {
-  return db.query.trackableShareLinks.findFirst({
-    where: (table, { and, eq, isNull, or, gt }) =>
-      and(
-        eq(table.token, token),
-        isNull(table.revokedAt),
-        or(isNull(table.expiresAt), gt(table.expiresAt, new Date()))
-      ),
+export function getShareLinkQuery() {
+  return {
     with: {
       trackable: {
         with: {
@@ -25,6 +19,25 @@ export async function getActiveShareLink(token: string) {
         },
       },
     },
+  } as const
+}
+
+export async function getShareLinkByToken(token: string) {
+  return db.query.trackableShareLinks.findFirst({
+    where: (table, { eq }) => eq(table.token, token),
+    ...getShareLinkQuery(),
+  })
+}
+
+export async function getActiveShareLink(token: string) {
+  return db.query.trackableShareLinks.findFirst({
+    where: (table, { and, eq, isNull, or, gt }) =>
+      and(
+        eq(table.token, token),
+        isNull(table.revokedAt),
+        or(isNull(table.expiresAt), gt(table.expiresAt, new Date()))
+      ),
+    ...getShareLinkQuery(),
   })
 }
 

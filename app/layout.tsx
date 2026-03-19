@@ -8,6 +8,7 @@ import { TRPCReactProvider } from "@/components/trpc-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { buildAbsoluteUrl, siteConfig } from "@/lib/site-config"
 import { cn } from "@/lib/utils"
+import { Toaster } from "sonner"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -66,7 +67,10 @@ export default function RootLayout({
         <ClerkProvider signInUrl={signInUrl} signUpUrl={signUpUrl}>
           <TRPCReactProvider>
             <TooltipProvider>
-              <ThemeProvider>{children}</ThemeProvider>
+              <ThemeProvider>
+                {children}
+                <Toaster position="top-center" />
+              </ThemeProvider>
             </TooltipProvider>
           </TRPCReactProvider>
         </ClerkProvider>
