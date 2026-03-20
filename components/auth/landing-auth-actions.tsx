@@ -11,6 +11,7 @@ import { ArrowRight } from "lucide-react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { T } from "gt-next";
 
 type LandingAuthActionsProps = {
   section: "navbar" | "hero"
@@ -32,7 +33,7 @@ export function LandingAuthActions({ section }: LandingAuthActionsProps) {
         {isSignedIn ? (
           <>
             <Button asChild size="sm" variant="ghost">
-              <Link href="/dashboard">Dashboard</Link>
+              <Link href="/dashboard"><T>Dashboard</T></Link>
             </Button>
             <SignOutButton redirectUrl="/">
               <button
@@ -41,8 +42,9 @@ export function LandingAuthActions({ section }: LandingAuthActionsProps) {
                   buttonVariants({ variant: "default", size: "sm" })
                 )}
               >
-                Sign out
-              </button>
+                
+                                            <T>Sign out</T>
+                                          </button>
             </SignOutButton>
           </>
         ) : (
@@ -56,8 +58,9 @@ export function LandingAuthActions({ section }: LandingAuthActionsProps) {
                 type="button"
                 className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
               >
-                Sign in
-              </button>
+                
+                                                <T>Sign in</T>
+                                              </button>
             </SignInButton>
             <SignUpButton
               mode="modal"
@@ -70,8 +73,9 @@ export function LandingAuthActions({ section }: LandingAuthActionsProps) {
                   buttonVariants({ variant: "default", size: "sm" })
                 )}
               >
-                Sign up
-              </button>
+                
+                                                <T>Sign up</T>
+                                              </button>
             </SignUpButton>
           </>
         )}
@@ -85,14 +89,16 @@ export function LandingAuthActions({ section }: LandingAuthActionsProps) {
         <>
           <Button asChild size="lg">
             <Link href="/dashboard">
-              Open dashboard
-              <ArrowRight className="ml-2 size-4" />
+              
+                                        <T>Open dashboard</T>
+                                        <ArrowRight className="ml-2 size-4" />
             </Link>
           </Button>
           <SignOutButton redirectUrl="/">
             <Button size="lg" variant="outline">
-              Sign out
-            </Button>
+              
+                                        <T>Sign out</T>
+                                      </Button>
           </SignOutButton>
         </>
       ) : (
@@ -103,8 +109,9 @@ export function LandingAuthActions({ section }: LandingAuthActionsProps) {
             fallbackRedirectUrl={dashboardRedirectUrl}
           >
             <Button size="lg">
-              Start tracking now
-              <ArrowRight className="ml-2 size-4" />
+              
+                                            <T>Start tracking now</T>
+                                            <ArrowRight className="ml-2 size-4" />
             </Button>
           </SignUpButton>
           <SignInButton
@@ -113,8 +120,9 @@ export function LandingAuthActions({ section }: LandingAuthActionsProps) {
             fallbackRedirectUrl={dashboardRedirectUrl}
           >
             <Button size="lg" variant="outline">
-              Log in to account
-            </Button>
+              
+                                            <T>Log in to account</T>
+                                          </Button>
           </SignInButton>
         </>
       )}
