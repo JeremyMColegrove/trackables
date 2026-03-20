@@ -5,10 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import type { TrackableKind } from "@/db/schema/types"
-
-function formatTrackableKind(kind: TrackableKind) {
-  return kind === "api_ingestion" ? "API ingestion" : "Survey"
-}
+import { getTrackableKindShortLabel } from "@/lib/trackable-kind"
 
 export type DashboardTrackableRow = {
   id: string
@@ -36,7 +33,9 @@ export const dashboardTrackableColumns: ColumnDef<DashboardTrackableRow>[] = [
       <DataTableColumnHeader column={column} title="Type" />
     ),
     cell: ({ row }) => (
-      <Badge variant="outline">{formatTrackableKind(row.original.kind)}</Badge>
+      <Badge variant="outline">
+        {getTrackableKindShortLabel(row.original.kind)}
+      </Badge>
     ),
   },
   {
@@ -65,7 +64,7 @@ export const dashboardTrackableColumns: ColumnDef<DashboardTrackableRow>[] = [
   {
     accessorKey: "apiUsageCount",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Usage Hits" />
+      <DataTableColumnHeader column={column} title="Logs" />
     ),
     cell: ({ row }) => (
       <div className="font-medium tabular-nums">

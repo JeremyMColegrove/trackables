@@ -77,7 +77,7 @@ export async function recordApiUsage(input: RecordApiUsageInput) {
   if (project.kind !== "api_ingestion") {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: "This trackable does not accept API ingestion events.",
+      message: "This trackable does not accept log events.",
     })
   }
 

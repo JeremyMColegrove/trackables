@@ -13,11 +13,10 @@ function canManageWorkspace(role: WorkspaceRole) {
 }
 
 export function buildDefaultWorkspaceName(
-  displayName: string | null,
-  email: string
+  _displayName: string | null,
+  _email: string
 ) {
-  const baseName = displayName?.trim() || email.split("@")[0] || "My"
-  return `${baseName}'s Workspace`
+  return "Default workspace"
 }
 
 function slugify(value: string) {
@@ -35,6 +34,60 @@ export function generateWorkspaceSlug(name: string, userId: string) {
       .replace(/[^a-z0-9]+/g, "")
       .slice(-6) || "home"
   return `${base}-${suffix}`
+}
+
+export async function createWorkspaceForUser(input: {
+  userId: string
+  name: string
+  setActive?: boolean
+}) {
+  const name = input.name.trim()
+
+  if (!name) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Workspace name is required.",
+    })
+  }
+
+  const slug = generateWorkspaceSlug(
+    name,
+    `${input.userId}-${crypto.randomUUID().slice(0, 8)}`
+  )
+
+  return db.transaction(async (tx) => {
+    const [workspace] = await tx
+      .insert(workspaces)
+      .values({
+        name,
+        slug,
+        createdByUserId: input.userId,
+      })
+      .returning({
+        id: workspaces.id,
+        name: workspaces.name,
+        slug: workspaces.slug,
+      })
+
+    await tx.insert(workspaceMembers).values({
+      workspaceId: workspace.id,
+      userId: input.userId,
+      role: "owner",
+      createdByUserId: input.userId,
+    })
+
+    if (input.setActive ?? true) {
+      await tx
+        .update(users)
+        .set({
+          activeWorkspaceId: workspace.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, input.userId))
+    }
+
+    return workspace
+  })
 }
 
 export async function getWorkspaceMemberships(userId: string) {
@@ -134,37 +187,38 @@ export async function createDefaultWorkspaceForUser(input: {
   const name = buildDefaultWorkspaceName(input.displayName, input.primaryEmail)
   const slug = generateWorkspaceSlug(name, input.userId)
 
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, input.userId),
+    columns: {
+      activeWorkspaceId: true,
+    },
+  })
+
   const existingMemberships = await getWorkspaceMemberships(input.userId)
 
   if (existingMemberships.length > 0) {
-    return existingMemberships[0]!.workspaceId
+    const activeWorkspaceId =
+      existingMemberships.find(
+        (membership) => membership.workspaceId === user?.activeWorkspaceId
+      )?.workspaceId ?? existingMemberships[0]!.workspaceId
+
+    if (activeWorkspaceId !== user?.activeWorkspaceId) {
+      await db
+        .update(users)
+        .set({
+          activeWorkspaceId,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, input.userId))
+    }
+
+    return activeWorkspaceId
   }
 
-  const [workspace] = await db
-    .insert(workspaces)
-    .values({
-      name,
-      slug,
-      createdByUserId: input.userId,
-    })
-    .returning({
-      id: workspaces.id,
-    })
-
-  await db.insert(workspaceMembers).values({
-    workspaceId: workspace.id,
+  const workspace = await createWorkspaceForUser({
     userId: input.userId,
-    role: "owner",
-    createdByUserId: input.userId,
+    name,
   })
-
-  await db
-    .update(users)
-    .set({
-      activeWorkspaceId: workspace.id,
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, input.userId))
 
   return workspace.id
 }

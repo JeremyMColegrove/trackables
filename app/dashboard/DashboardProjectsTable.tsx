@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation"
 import { dashboardTrackableColumns } from "@/app/dashboard/dashboard-project-columns"
 import { DataTable } from "@/components/ui/data-table"
 import { Input } from "@/components/ui/input"
+import { getTrackableKindCreationLabel } from "@/lib/trackable-kind"
 import { useTRPC } from "@/trpc/client"
 
 type DashboardTrackablesTableProps = {
@@ -44,7 +45,7 @@ export function DashboardTrackablesTable({
     return (trackables ?? []).filter((trackable) =>
       [
         trackable.name,
-        trackable.kind === "api_ingestion" ? "api ingestion" : "survey",
+        getTrackableKindCreationLabel(trackable.kind),
         trackable.workspace.name ?? "",
       ]
         .join(" ")

@@ -41,3 +41,15 @@ export const workspaceRoleEnum = pgEnum("workspace_role", [
   "admin",
   "member",
 ])
+
+export const batchJobRunStatusEnum = pgEnum("batch_job_run_status", [
+  "running",
+  "success",
+  "failed",
+  "skipped",
+])
+
+export const batchJobTriggerEnum = pgEnum("batch_job_trigger", [
+  "cron",
+  "manual",
+])

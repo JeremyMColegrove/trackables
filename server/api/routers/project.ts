@@ -58,6 +58,13 @@ import type { TrackableKind } from "@/db/schema/types"
 
 const accessRoleSchema = z.enum(["submit", "view", "manage"])
 const trackableKindSchema = z.enum(["survey", "api_ingestion"])
+const apiLogRetentionDaysSchema = z.union([
+  z.literal(3),
+  z.literal(7),
+  z.literal(30),
+  z.literal(90),
+  z.null(),
+])
 
 // Helper to create a somewhat unique slug
 function generateSlug(name: string) {
@@ -834,6 +841,7 @@ export const trackablesRouter = createTRPCRouter({
         name: z.string().min(1, "Name is required"),
         description: z.string().optional(),
         allowAnonymousSubmissions: z.boolean().optional(),
+        apiLogRetentionDays: apiLogRetentionDaysSchema.optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -873,7 +881,10 @@ export const trackablesRouter = createTRPCRouter({
               allowAnonymousSubmissions:
                 input.allowAnonymousSubmissions ?? true,
             }
-          : existingSettings
+          : {
+              ...existingSettings,
+              apiLogRetentionDays: input.apiLogRetentionDays ?? null,
+            }
 
       const [updated] = await db
         .update(trackableItems)
@@ -1106,7 +1117,7 @@ export const trackablesRouter = createTRPCRouter({
       assertTrackableKind(
         trackable.kind,
         "api_ingestion",
-        "Only API ingestion trackables can create API keys."
+        "Only log trackables can create API keys."
       )
 
       const plaintextKey = buildApiKeySecret()

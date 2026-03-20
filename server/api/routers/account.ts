@@ -7,6 +7,7 @@ import { db } from "@/db"
 import { users } from "@/db/schema"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import {
+  createWorkspaceForUser,
   getWorkspaceMemberships,
   resolveActiveWorkspace,
 } from "@/server/workspaces"
@@ -95,6 +96,31 @@ export const accountRouter = createTRPCRouter({
       return {
         ok: true,
       }
+    }),
+
+  createWorkspace: protectedProcedure
+    .input(
+      z.object({
+        name: z
+          .string()
+          .trim()
+          .min(1, { message: "Workspace name is required." })
+          .max(80, { message: "Workspace name must be 80 characters or fewer." }),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.auth.userId
+
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" })
+      }
+
+      const workspace = await createWorkspaceForUser({
+        userId,
+        name: input.name,
+      })
+
+      return workspace
     }),
 
   updateProfilePrivacy: protectedProcedure
