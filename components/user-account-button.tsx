@@ -2,26 +2,16 @@
 
 import { UserButton, useUser } from "@clerk/nextjs"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { LoaderCircle, Languages, Shield } from "lucide-react"
+import { LoaderCircle, Shield } from "lucide-react"
 
 import { Switch } from "@/components/ui/switch"
-import { supportedClerkLocales } from "@/lib/clerk-localization"
 import { useTRPC } from "@/trpc/client"
-import { LocaleSelector, T, useGT, useLocale } from "gt-next"
+import { T, useGT } from "gt-next";
 
 export function UserAccountButton() {
-  const gt = useGT()
-  const locale = useLocale()
-
+    const gt = useGT();
   return (
-    <UserButton key={locale}>
-      <UserButton.UserProfilePage
-        label={gt("Localization")}
-        labelIcon={<Languages className="size-4" />}
-        url="localization"
-      >
-        <ProfileLocalizationPage />
-      </UserButton.UserProfilePage>
+    <UserButton>
       <UserButton.UserProfilePage
         label={gt("Privacy")}
         labelIcon={<Shield className="size-4" />}
@@ -30,31 +20,6 @@ export function UserAccountButton() {
         <ProfilePrivacyPage />
       </UserButton.UserProfilePage>
     </UserButton>
-  )
-}
-
-function ProfileLocalizationPage() {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-1">
-        <h2 className="text-sm font-semibold text-foreground">
-          <T>Localization</T>
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          <T>Choose the language used across your Trackable experience.</T>
-        </p>
-      </div>
-
-      <div className="space-y-2 rounded-lg border p-4">
-        <p className="text-sm font-medium text-foreground">
-          <T>Language</T>
-        </p>
-        <LocaleSelector
-          locales={supportedClerkLocales}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-        />
-      </div>
-    </div>
   )
 }
 
