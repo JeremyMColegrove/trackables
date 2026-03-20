@@ -30,7 +30,7 @@ pnpm-debug.log*
 
 # env files
 .env*.local
-.env*
+.env
 
 # compose bind-mounted data
 /data/*
