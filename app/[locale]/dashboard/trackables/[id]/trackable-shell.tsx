@@ -45,7 +45,7 @@ import { usePathname } from "next/navigation";
 import { createContext, useContext } from "react";
 import { SurveyShareDialog } from "./survey-share-dialog";
 import type { TrackableDetails } from "./table-types";
-import { T, useGT } from "gt-next";
+import { T, useGT, useLocale } from "gt-next";
 
 type TrackableNavItem = {
 	href: string;
@@ -57,8 +57,11 @@ type TrackableNavItem = {
 
 const TrackableDetailsContext = createContext<TrackableDetails | null>(null);
 
-function getTrackableNavItems(trackable: TrackableDetails): TrackableNavItem[] {
-	const baseHref = `/dashboard/trackables/${trackable.id}`;
+function getTrackableNavItems(
+	trackable: TrackableDetails,
+	dashboardBaseHref: string,
+): TrackableNavItem[] {
+	const baseHref = `${dashboardBaseHref}/trackables/${trackable.id}`;
 
 	if (trackable.kind === "survey") {
 		return [
@@ -105,13 +108,14 @@ function getTrackableNavItems(trackable: TrackableDetails): TrackableNavItem[] {
 	];
 }
 
-function getWorkspaceNavItems(): TrackableNavItem[] {
+function getWorkspaceNavItems(dashboardBaseHref: string): TrackableNavItem[] {
 	return [
 		{
-			href: "/dashboard",
+			href: dashboardBaseHref,
 			label: "Back to Dashboard",
 			icon: ArrowLeft,
-			isActive: (pathname) => pathname === "/dashboard",
+			isActive: (pathname) =>
+				pathname === dashboardBaseHref || pathname === "/dashboard",
 		},
 	];
 }
@@ -172,10 +176,12 @@ function TrackableShellError({
 }
 
 function TrackableSidebarNav({ trackable }: { trackable: TrackableDetails }) {
+	const locale = useLocale();
 	const pathname = usePathname();
 	const { isMobile, setOpenMobile } = useSidebar();
-	const trackableNavItems = getTrackableNavItems(trackable);
-	const workspaceNavItems = getWorkspaceNavItems();
+	const dashboardBaseHref = locale === "en" ? "/dashboard" : `/${locale}/dashboard`;
+	const trackableNavItems = getTrackableNavItems(trackable, dashboardBaseHref);
+	const workspaceNavItems = getWorkspaceNavItems(dashboardBaseHref);
 
 	function handleNavigate() {
 		if (isMobile) {
@@ -186,7 +192,7 @@ function TrackableSidebarNav({ trackable }: { trackable: TrackableDetails }) {
 	return (
 		<Sidebar variant="inset" collapsible="offcanvas">
 			<SidebarHeader className="gap-4 border-b px-4 py-4">
-				<AppBrand href="/dashboard" />
+				<AppBrand href={dashboardBaseHref} />
 			</SidebarHeader>
 
 			<SidebarContent>

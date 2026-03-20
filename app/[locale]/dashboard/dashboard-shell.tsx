@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocale } from "gt-next"
 import { usePathname } from "next/navigation"
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -12,8 +13,12 @@ export function DashboardShell({
 }: {
   children: React.ReactNode
 }) {
+  const locale = useLocale()
   const pathname = usePathname()
-  const isTrackableRoute = pathname.startsWith("/dashboard/trackables/")
+  const localizedDashboardPrefix = `/${locale}/dashboard/trackables/`
+  const isTrackableRoute =
+    pathname.startsWith("/dashboard/trackables/") ||
+    pathname.startsWith(localizedDashboardPrefix)
 
   if (isTrackableRoute) {
     return <>{children}</>
