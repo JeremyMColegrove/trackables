@@ -32,7 +32,7 @@ Try out a hosted version [here](https://trackables.org).
 
 The recommended way to run the application is through docker. We provide an example docker-compose and .env for you.
 
-See the example [docker-compose.yml](./docker-compose.yml) and [.env.example](./.env.example) file to get started.
+See the example [docker-compose.yml](./example/docker-compose.yml) and [.env.example](./example/.env.example) file to get started.
 
 ## Screenshots
 
