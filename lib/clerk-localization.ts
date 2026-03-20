@@ -38,6 +38,8 @@ const clerkLocalizationByLocale = {
   "zh-CN": zhCN,
 } as const
 
+export const supportedClerkLocales = Object.keys(clerkLocalizationByLocale)
+
 export function getClerkLocalization(locale: string) {
   return (
     clerkLocalizationByLocale[

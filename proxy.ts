@@ -11,6 +11,13 @@ export default clerkMiddleware(async (auth, request) => {
     await auth.protect()
   }
 
+  const { pathname } = request.nextUrl
+
+  // Keep locale middleware off API handlers so /api/trpc stays stable.
+  if (pathname.startsWith("/api/") || pathname === "/api") {
+    return
+  }
+
   const gtMiddleware = createNextMiddleware({
     prefixDefaultLocale: false,
   })
