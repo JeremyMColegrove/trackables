@@ -1,4 +1,4 @@
-import { TrackableOverviewSection } from "./trackable-sections"
+import { TrackableOverviewSection } from "./trackable-overview-section"
 
 export const dynamic = "force-dynamic"
 

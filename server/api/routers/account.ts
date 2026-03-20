@@ -9,8 +9,8 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import {
   createWorkspaceForUser,
   getWorkspaceMemberships,
-  resolveActiveWorkspace,
 } from "@/server/workspaces"
+import { accessControlService } from "@/server/services/access-control.service"
 
 export const accountRouter = createTRPCRouter({
   getProfilePrivacy: protectedProcedure.query(async ({ ctx }) => {
@@ -40,7 +40,7 @@ export const accountRouter = createTRPCRouter({
     }
 
     const [activeMembership, memberships] = await Promise.all([
-      resolveActiveWorkspace(userId),
+      accessControlService.resolveActiveWorkspace(userId),
       getWorkspaceMemberships(userId),
     ])
 

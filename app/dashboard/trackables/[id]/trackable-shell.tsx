@@ -1,8 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { RequireAuth } from "@/components/auth/require-auth";
 import { AppBrand } from "@/components/app-brand";
+import { RequireAuth } from "@/components/auth/require-auth";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -32,6 +31,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserAccountButton } from "@/components/user-account-button";
 import { useTRPC } from "@/trpc/client";
+import { useQuery } from "@tanstack/react-query";
 import {
 	ArrowLeft,
 	KeyRound,
@@ -191,7 +191,7 @@ function TrackableSidebarNav({ trackable }: { trackable: TrackableDetails }) {
 				<SidebarGroup className="px-3 py-3">
 					<SidebarGroupLabel>Current Trackable</SidebarGroupLabel>
 					<SidebarGroupContent>
-						<SidebarMenu>
+						<SidebarMenu className="gap-1">
 							{trackableNavItems.map((item) => (
 								<SidebarMenuItem key={item.href}>
 									<SidebarMenuButton

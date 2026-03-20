@@ -6,11 +6,6 @@ import { and, eq, isNull } from "drizzle-orm"
 import { db } from "@/db"
 import { users, workspaceMembers, workspaces } from "@/db/schema"
 
-type WorkspaceRole = "owner" | "admin" | "member"
-
-function canManageWorkspace(role: WorkspaceRole) {
-  return role === "owner" || role === "admin"
-}
 
 export function buildDefaultWorkspaceName(
   _displayName: string | null,
@@ -101,82 +96,6 @@ export async function getWorkspaceMemberships(userId: string) {
     },
     orderBy: (table, { asc }) => [asc(table.createdAt)],
   })
-}
-
-export async function resolveActiveWorkspace(userId: string) {
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-    columns: {
-      activeWorkspaceId: true,
-    },
-  })
-
-  const memberships = await getWorkspaceMemberships(userId)
-
-  const activeMembership =
-    memberships.find(
-      (membership) => membership.workspaceId === user?.activeWorkspaceId
-    ) ?? memberships[0]
-
-  if (!activeMembership) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: "No workspace found for this account.",
-    })
-  }
-
-  if (activeMembership.workspaceId !== user?.activeWorkspaceId) {
-    await db
-      .update(users)
-      .set({
-        activeWorkspaceId: activeMembership.workspaceId,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, userId))
-  }
-
-  return activeMembership
-}
-
-export async function assertWorkspaceAccess(
-  userId: string,
-  workspaceId: string
-) {
-  const membership = await db.query.workspaceMembers.findFirst({
-    where: and(
-      eq(workspaceMembers.userId, userId),
-      eq(workspaceMembers.workspaceId, workspaceId),
-      isNull(workspaceMembers.revokedAt)
-    ),
-    with: {
-      workspace: true,
-    },
-  })
-
-  if (!membership) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: "Workspace not found.",
-    })
-  }
-
-  return membership
-}
-
-export async function assertWorkspaceManagementAccess(
-  userId: string,
-  workspaceId: string
-) {
-  const membership = await assertWorkspaceAccess(userId, workspaceId)
-
-  if (!canManageWorkspace(membership.role)) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "You do not have permission to manage this workspace.",
-    })
-  }
-
-  return membership
 }
 
 export async function createDefaultWorkspaceForUser(input: {

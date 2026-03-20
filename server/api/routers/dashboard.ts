@@ -7,7 +7,7 @@ import {
   trackableFormSubmissions,
   trackableItems,
 } from "@/db/schema"
-import { resolveActiveWorkspace } from "@/server/workspaces"
+import { accessControlService } from "@/server/services/access-control.service"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 
 const ACTIVITY_WINDOW_DAYS = 7
@@ -44,7 +44,7 @@ export const dashboardRouter = createTRPCRouter({
 
     const now = new Date()
     const windowStart = getWindowStart(now)
-    const activeWorkspace = await resolveActiveWorkspace(userId)
+    const activeWorkspace = await accessControlService.resolveActiveWorkspace(userId)
 
     const [submissionTotals, recentSubmissions, recentUsageEvents] =
       await Promise.all([
@@ -130,7 +130,7 @@ export const dashboardRouter = createTRPCRouter({
       throw new TRPCError({ code: "UNAUTHORIZED" })
     }
 
-    const activeWorkspace = await resolveActiveWorkspace(userId)
+    const activeWorkspace = await accessControlService.resolveActiveWorkspace(userId)
 
     return db.query.trackableItems.findMany({
       where: eq(trackableItems.workspaceId, activeWorkspace.workspaceId),

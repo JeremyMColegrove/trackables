@@ -1,4 +1,4 @@
-import { TrackableFormSection } from "../trackable-sections"
+import { TrackableFormSection } from "../trackable-form-section"
 
 export const dynamic = "force-dynamic"
 

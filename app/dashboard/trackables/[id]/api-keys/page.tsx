@@ -1,4 +1,4 @@
-import { TrackableApiKeysSection } from "../trackable-sections"
+import { TrackableApiKeysSection } from "../trackable-api-keys-section"
 
 export const dynamic = "force-dynamic"
 

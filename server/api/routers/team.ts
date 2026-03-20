@@ -5,10 +5,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { users, workspaceMembers } from "@/db/schema"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
-import {
-  assertWorkspaceManagementAccess,
-  resolveActiveWorkspace,
-} from "@/server/workspaces"
+import { accessControlService } from "@/server/services/access-control.service"
 
 const userSearchSchema = z.object({
   query: z.string().trim().min(2).max(100),
@@ -22,7 +19,7 @@ export const teamRouter = createTRPCRouter({
       throw new TRPCError({ code: "UNAUTHORIZED" })
     }
 
-    const membership = await resolveActiveWorkspace(userId)
+    const membership = await accessControlService.resolveActiveWorkspace(userId)
 
     const members = await db.query.workspaceMembers.findMany({
       where: and(
@@ -42,7 +39,7 @@ export const teamRouter = createTRPCRouter({
       throw new TRPCError({ code: "UNAUTHORIZED" })
     }
 
-    const membership = await resolveActiveWorkspace(userId)
+    const membership = await accessControlService.resolveActiveWorkspace(userId)
     const members = await db.query.workspaceMembers.findMany({
       where: and(
         eq(workspaceMembers.workspaceId, membership.workspaceId),
@@ -86,7 +83,7 @@ export const teamRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      const membership = await resolveActiveWorkspace(userId)
+      const membership = await accessControlService.resolveActiveWorkspace(userId)
       const existingMembers = await db.query.workspaceMembers.findMany({
         where: and(
           eq(workspaceMembers.workspaceId, membership.workspaceId),
@@ -133,8 +130,8 @@ export const teamRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      const activeMembership = await resolveActiveWorkspace(userId)
-      await assertWorkspaceManagementAccess(
+      const activeMembership = await accessControlService.resolveActiveWorkspace(userId)
+      await accessControlService.assertWorkspaceManagementAccess(
         userId,
         activeMembership.workspaceId
       )
@@ -199,8 +196,8 @@ export const teamRouter = createTRPCRouter({
         throw new TRPCError({ code: "UNAUTHORIZED" })
       }
 
-      const activeMembership = await resolveActiveWorkspace(userId)
-      await assertWorkspaceManagementAccess(
+      const activeMembership = await accessControlService.resolveActiveWorkspace(userId)
+      await accessControlService.assertWorkspaceManagementAccess(
         userId,
         activeMembership.workspaceId
       )

@@ -1,4 +1,4 @@
-import { TrackableSettingsSection } from "../trackable-sections"
+import { TrackableSettingsSection } from "../trackable-settings-section"
 
 export const dynamic = "force-dynamic"
 
