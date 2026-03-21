@@ -3,12 +3,10 @@ import { TRPCError } from "@trpc/server"
 import { eq, max } from "drizzle-orm"
 import { db } from "@/db"
 import { trackableFormFields, trackableForms, trackableItems } from "@/db/schema"
-import {
-  normalizeEditableForm,
-  type EditableTrackableForm,
-} from "@/lib/project-form-builder"
+import { normalizeEditableForm, type EditableTrackableForm } from "@/lib/project-form-builder"
 import { accessControlService } from "@/server/services/access-control.service"
 import { assertTrackableKind } from "@/server/services/project.service"
+import { sharedFormCache } from "@/server/redis/shared-form-cache.repository"
 
 export class FormService {
   async createForm(trackableId: string, userId: string) {
@@ -75,6 +73,8 @@ export class FormService {
 
       return createdForm
     })
+
+    await sharedFormCache.invalidateForTrackable(trackable.id)
 
     return {
       id: form.id,
@@ -184,6 +184,8 @@ export class FormService {
         fields: [],
       }
     })
+
+    await sharedFormCache.invalidateForTrackable(trackable.id)
 
     return savedForm
   }

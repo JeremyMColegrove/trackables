@@ -9,7 +9,7 @@ import {
   workspaceMembers,
   users,
 } from "@/db/schema"
-import { getWorkspaceMemberships } from "@/server/workspaces"
+import { userActiveWorkspaceCache, userMembershipsCache } from "@/server/redis/access-control-cache.repository"
 
 export type AccessRole = "submit" | "view" | "manage"
 export type WorkspaceRole = "owner" | "admin" | "member"
@@ -52,16 +52,8 @@ export class AccessControlService {
       })
     }
 
-    const workspaceMembership = await db.query.workspaceMembers.findFirst({
-      where: and(
-        eq(workspaceMembers.workspaceId, project.workspaceId),
-        eq(workspaceMembers.userId, userId),
-        isNull(workspaceMembers.revokedAt)
-      ),
-      columns: {
-        id: true,
-      },
-    })
+    const memberships = await userMembershipsCache.get(userId) || []
+    const workspaceMembership = memberships.find(m => m.workspaceId === project.workspaceId)
 
     if (workspaceMembership) {
       return project
@@ -125,18 +117,13 @@ export class AccessControlService {
   }
 
   async resolveActiveWorkspace(userId: string) {
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-      columns: {
-        activeWorkspaceId: true,
-      },
-    })
+    const activeWorkspaceId = await userActiveWorkspaceCache.get(userId)
 
-    const memberships = await getWorkspaceMemberships(userId)
+    const memberships = await userMembershipsCache.get(userId) || []
 
     const activeMembership =
       memberships.find(
-        (membership) => membership.workspaceId === user?.activeWorkspaceId
+        (membership) => membership.workspaceId === activeWorkspaceId
       ) ?? memberships[0]
 
     if (!activeMembership) {
@@ -146,7 +133,7 @@ export class AccessControlService {
       })
     }
 
-    if (activeMembership.workspaceId !== user?.activeWorkspaceId) {
+    if (activeMembership.workspaceId !== activeWorkspaceId) {
       await db
         .update(users)
         .set({
@@ -154,22 +141,16 @@ export class AccessControlService {
           updatedAt: new Date(),
         })
         .where(eq(users.id, userId))
+        
+      await userActiveWorkspaceCache.set(userId, activeMembership.workspaceId)
     }
 
     return activeMembership
   }
 
   async assertWorkspaceAccess(userId: string, workspaceId: string) {
-    const membership = await db.query.workspaceMembers.findFirst({
-      where: and(
-        eq(workspaceMembers.userId, userId),
-        eq(workspaceMembers.workspaceId, workspaceId),
-        isNull(workspaceMembers.revokedAt)
-      ),
-      with: {
-        workspace: true,
-      },
-    })
+    const memberships = await userMembershipsCache.get(userId) || []
+    const membership = memberships.find((m) => m.workspaceId === workspaceId)
 
     if (!membership) {
       throw new TRPCError({

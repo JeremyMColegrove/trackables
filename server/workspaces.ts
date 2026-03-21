@@ -5,6 +5,7 @@ import { and, eq, isNull } from "drizzle-orm"
 
 import { db } from "@/db"
 import { users, workspaceMembers, workspaces } from "@/db/schema"
+import { userActiveWorkspaceCache, userMembershipsCache } from "@/server/redis/access-control-cache.repository"
 
 
 export function buildDefaultWorkspaceName(
@@ -50,7 +51,7 @@ export async function createWorkspaceForUser(input: {
     `${input.userId}-${crypto.randomUUID().slice(0, 8)}`
   )
 
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const [workspace] = await tx
       .insert(workspaces)
       .values({
@@ -83,6 +84,13 @@ export async function createWorkspaceForUser(input: {
 
     return workspace
   })
+
+  await userMembershipsCache.delete(input.userId)
+  if (input.setActive ?? true) {
+    await userActiveWorkspaceCache.delete(input.userId)
+  }
+
+  return result
 }
 
 export async function getWorkspaceMemberships(userId: string) {
@@ -106,32 +114,29 @@ export async function createDefaultWorkspaceForUser(input: {
   const name = buildDefaultWorkspaceName(input.displayName, input.primaryEmail)
   const slug = generateWorkspaceSlug(name, input.userId)
 
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, input.userId),
-    columns: {
-      activeWorkspaceId: true,
-    },
-  })
+  const activeWorkspaceId = await userActiveWorkspaceCache.get(input.userId)
 
   const existingMemberships = await getWorkspaceMemberships(input.userId)
 
   if (existingMemberships.length > 0) {
-    const activeWorkspaceId =
+    const defaultWorkspaceId =
       existingMemberships.find(
-        (membership) => membership.workspaceId === user?.activeWorkspaceId
+        (membership) => membership.workspaceId === activeWorkspaceId
       )?.workspaceId ?? existingMemberships[0]!.workspaceId
 
-    if (activeWorkspaceId !== user?.activeWorkspaceId) {
+    if (defaultWorkspaceId !== activeWorkspaceId) {
       await db
         .update(users)
         .set({
-          activeWorkspaceId,
+          activeWorkspaceId: defaultWorkspaceId,
           updatedAt: new Date(),
         })
         .where(eq(users.id, input.userId))
+        
+      await userActiveWorkspaceCache.delete(input.userId)
     }
 
-    return activeWorkspaceId
+    return defaultWorkspaceId
   }
 
   const workspace = await createWorkspaceForUser({

@@ -7,6 +7,7 @@ import { users, workspaceMembers } from "@/db/schema"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import { accessControlService } from "@/server/services/access-control.service"
 import { quotaService } from "@/server/subscriptions/quota.service"
+import { userMembershipsCache } from "@/server/redis/access-control-cache.repository"
 
 const userSearchSchema = z.object({
   query: z.string().trim().min(2).max(100),
@@ -185,6 +186,8 @@ export const teamRouter = createTRPCRouter({
         })
       }
 
+      await userMembershipsCache.delete(input.memberUserId)
+
       return { ok: true }
     }),
 
@@ -237,6 +240,8 @@ export const teamRouter = createTRPCRouter({
           updatedAt: new Date(),
         })
         .where(eq(workspaceMembers.id, member.id))
+
+      await userMembershipsCache.delete(input.memberUserId)
 
       return { ok: true }
     }),

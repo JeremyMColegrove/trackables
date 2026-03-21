@@ -1,5 +1,7 @@
 import "server-only"
 
+import superjson from "superjson"
+
 import { redis } from "./redis-client"
 
 export abstract class BaseCacheRepository<T> {
@@ -17,17 +19,40 @@ export abstract class BaseCacheRepository<T> {
   }
 
   /**
-   * Fetch an entity from the cache by ID.
+   * Implement this method in subclasses to provide the DB fallback logic when a cache miss occurs.
+   * If the entity does not exist in the database, return null.
    */
-  async get(id: string): Promise<T | null> {
+  protected abstract fetchFallback(id: string): Promise<T | null>
+
+  /**
+   * Fetch an entity from the cache by ID, without invoking the DB fallback if missed.
+   */
+  async getRaw(id: string): Promise<T | null> {
     const data = await redis.get(this.getKey(id))
     if (!data) return null
 
     try {
-      return JSON.parse(data) as T
+      return superjson.parse(data) as T
     } catch {
       return null
     }
+  }
+
+  /**
+   * Fetch an entity from the cache by ID. If missed, invokes DB fallback.
+   */
+  async get(id: string): Promise<T | null> {
+    const cached = await this.getRaw(id)
+    if (cached !== null) {
+      return cached
+    }
+
+    // Cache miss: fall back to the implemented DB method
+    const fallbackData = await this.fetchFallback(id)
+    if (fallbackData !== null) {
+      await this.set(id, fallbackData)
+    }
+    return fallbackData
   }
 
   /**
@@ -41,7 +66,7 @@ export abstract class BaseCacheRepository<T> {
     return results.map((data) => {
       if (!data) return null
       try {
-        return JSON.parse(data) as T
+        return superjson.parse(data) as T
       } catch {
         return null
       }
@@ -52,7 +77,7 @@ export abstract class BaseCacheRepository<T> {
    * Set an entity in the cache.
    */
   async set(id: string, entity: T, ttlSeconds: number = this.defaultTtlSeconds): Promise<void> {
-    const data = JSON.stringify(entity)
+    const data = superjson.stringify(entity)
     await redis.set(this.getKey(id), data, "EX", ttlSeconds)
   }
 

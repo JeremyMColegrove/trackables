@@ -5,14 +5,11 @@ import { randomBytes } from "node:crypto"
 
 import { db } from "@/db"
 import { trackableAccessGrants, trackableShareLinks } from "@/db/schema"
-import {
-  getActiveShareLink,
-  getShareLinkByToken,
-  requiresAuthenticatedSharedFormAccess,
-} from "@/lib/trackable-share-links"
+import { getShareLinkByToken } from "@/lib/trackable-share-links"
 import { hasAuthenticatedSharedFormSubmission } from "@/lib/shared-form-submissions"
 import { accessControlService } from "@/server/services/access-control.service"
 import { assertTrackableKind } from "@/server/services/project.service"
+import { sharedFormCache } from "@/server/redis/shared-form-cache.repository"
 
 export type AccessRole = "submit" | "view" | "manage"
 
@@ -22,7 +19,7 @@ function createShareToken() {
 
 export class ShareLinkService {
   async getSharedForm(token: string, viewerUserId: string | null) {
-    const shareLink = await getActiveShareLink(token)
+    const shareLink = await sharedFormCache.get(token)
 
     if (!shareLink) {
       const existingShareLink = await getShareLinkByToken(token)
@@ -64,7 +61,7 @@ export class ShareLinkService {
     }
 
     const requiresAuthentication =
-      requiresAuthenticatedSharedFormAccess(settings)
+      shareLink.trackable.settings?.allowAnonymousSubmissions === false
 
     return {
       shareLink,
@@ -272,6 +269,8 @@ export class ShareLinkService {
       })
       .where(eq(trackableShareLinks.id, existingLink.id))
       .returning()
+
+    await sharedFormCache.invalidateForTrackable(input.trackableId)
 
     return updatedLink
   }

@@ -12,6 +12,9 @@ import {
 } from "@/db/schema"
 import { subscriptionService } from "@/server/subscriptions/subscription.service"
 import { areTiersUnlocked } from "@/server/subscriptions/tiers-unlocked"
+import { CounterCacheRepository } from "@/server/redis/counter-cache.repository"
+
+const apiLogsRateLimitCache = new CounterCacheRepository("api-logs-rate-limit")
 
 export class QuotaService {
   async assertCanCreateTrackable(workspaceId: string) {
@@ -121,23 +124,11 @@ export class QuotaService {
       return
     }
 
-    const oneMinuteAgo = new Date(Date.now() - 60_000)
+    const currentMinute = Math.floor(Date.now() / 60000)
+    const counterKey = `${workspaceId}:${currentMinute}`
+    const count = await apiLogsRateLimitCache.incrementWindow(counterKey, 1, 60)
 
-    const [result] = await db
-      .select({ count: count() })
-      .from(trackableApiUsageEvents)
-      .innerJoin(
-        trackableItems,
-        eq(trackableApiUsageEvents.trackableId, trackableItems.id)
-      )
-      .where(
-        and(
-          eq(trackableItems.workspaceId, workspaceId),
-          gte(trackableApiUsageEvents.occurredAt, oneMinuteAgo)
-        )
-      )
-
-    if (result.count >= limits.maxApiLogsPerMinute) {
+    if (count > limits.maxApiLogsPerMinute) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: `Rate limit exceeded: maximum ${limits.maxApiLogsPerMinute} API logs per minute for your plan. Please upgrade for higher limits.`,

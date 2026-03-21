@@ -3,12 +3,14 @@ import "server-only"
 import { randomUUID } from "node:crypto"
 
 import { TRPCError } from "@trpc/server"
-import { and, eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 
 import { db } from "@/db"
 import { apiKeys, trackableApiUsageEvents, trackableItems } from "@/db/schema"
 import type { UsageEventMetadata, UsageEventPayload } from "@/db/schema/types"
 import { hashApiKey } from "@/server/api-keys"
+import { apiLogCache } from "@/server/redis/api-log-cache.repository"
+import { apiKeyCache } from "@/server/redis/api-key-cache.repository"
 import { quotaService } from "@/server/subscriptions/quota.service"
 
 interface RecordApiUsageInput {
@@ -23,22 +25,18 @@ export async function recordApiUsage(input: RecordApiUsageInput) {
   const secretHash = hashApiKey(input.apiKey)
   const now = new Date()
 
-  const apiKey = await db.query.apiKeys.findFirst({
-    where: and(
-      eq(apiKeys.keyPrefix, keyPrefix),
-      eq(apiKeys.secretHash, secretHash),
-      eq(apiKeys.status, "active")
-    ),
-    columns: {
-      id: true,
-      workspaceId: true,
-      projectId: true,
-      expiresAt: true,
-      usageCount: true,
-    },
-  })
+  const validationData = await apiKeyCache.getValidation(keyPrefix, secretHash)
+  
+  if (!validationData) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Invalid API key.",
+    })
+  }
 
-  if (!apiKey || (apiKey.expiresAt && apiKey.expiresAt <= now)) {
+  const { apiKey, project } = validationData
+
+  if (apiKey.expiresAt && apiKey.expiresAt <= now) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "Invalid API key.",
@@ -52,21 +50,6 @@ export async function recordApiUsage(input: RecordApiUsageInput) {
         "This API key is not bound to a trackable. Create a new API key for this trackable.",
     })
   }
-
-  const project = await db.query.trackableItems.findFirst({
-    where: and(
-      eq(trackableItems.id, apiKey.projectId),
-      eq(trackableItems.workspaceId, apiKey.workspaceId)
-    ),
-    columns: {
-      id: true,
-      kind: true,
-      name: true,
-      apiUsageCount: true,
-      lastApiUsageAt: true,
-      archivedAt: true,
-    },
-  })
 
   if (!project || project.archivedAt) {
     throw new TRPCError({
@@ -106,7 +89,7 @@ export async function recordApiUsage(input: RecordApiUsageInput) {
     await tx
       .update(trackableItems)
       .set({
-        apiUsageCount: project.apiUsageCount + 1,
+        apiUsageCount: sql`${trackableItems.apiUsageCount} + 1`,
         lastApiUsageAt: occurredAt,
         updatedAt: occurredAt,
       })
@@ -115,13 +98,29 @@ export async function recordApiUsage(input: RecordApiUsageInput) {
     await tx
       .update(apiKeys)
       .set({
-        usageCount: apiKey.usageCount + 1,
+        usageCount: sql`${apiKeys.usageCount} + 1`,
         lastUsedAt: occurredAt,
         updatedAt: occurredAt,
       })
       .where(eq(apiKeys.id, apiKey.id))
 
     return [usageEvent]
+  })
+
+  await apiLogCache.addLogToTrackable(project.id, {
+    id: createdUsageEvent.id,
+    trackableId: project.id,
+    apiKeyId: apiKey.id,
+    requestId,
+    occurredAt: createdUsageEvent.occurredAt,
+    payload: input.payload,
+    metadata: input.metadata ?? null,
+    apiKey: {
+      id: apiKey.id,
+      name: apiKey.name,
+      keyPrefix: apiKey.keyPrefix,
+      lastFour: apiKey.lastFour,
+    },
   })
 
   return {

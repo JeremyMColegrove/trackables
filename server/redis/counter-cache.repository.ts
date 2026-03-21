@@ -8,6 +8,10 @@ export class CounterCacheRepository extends BaseCacheRepository<number> {
     super(prefix, 60) // Default TTL is short for counters (e.g. 1 minute)
   }
 
+  protected async fetchFallback(id: string): Promise<number | null> {
+    return null
+  }
+
   /**
    * Atomically increment a counter within a specific time window.
    * If the counter doesn't exist, it creates it with the given TTL.

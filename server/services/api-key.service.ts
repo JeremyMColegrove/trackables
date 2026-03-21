@@ -11,6 +11,7 @@ import {
 } from "@/server/api-keys"
 import { accessControlService } from "@/server/services/access-control.service"
 import { assertTrackableKind } from "@/server/services/project.service"
+import { apiKeyCache } from "@/server/redis/api-key-cache.repository"
 
 export class ApiKeyService {
   async createApiKey(input: {
@@ -80,6 +81,8 @@ export class ApiKeyService {
       columns: {
         id: true,
         status: true,
+        keyPrefix: true,
+        secretHash: true,
       },
     })
 
@@ -105,6 +108,8 @@ export class ApiKeyService {
         id: apiKeys.id,
         status: apiKeys.status,
       })
+
+    await apiKeyCache.invalidateValidation(existingKey.keyPrefix, existingKey.secretHash)
 
     return revokedKey
   }

@@ -8,6 +8,7 @@ import type {
   UsageEventSearchInput,
   UsageEventSourceSnapshot,
 } from "@/lib/usage-event-search"
+import { apiLogCache } from "@/server/redis/api-log-cache.repository"
 
 export async function getTrackableUsageSourceSnapshot(
   trackableId: string
@@ -27,12 +28,7 @@ export async function getTrackableUsageSourceSnapshot(
 }
 
 export async function getTrackableUsageAggregateFields(trackableId: string) {
-  const events = await db.query.trackableApiUsageEvents.findMany({
-    where: eq(trackableApiUsageEvents.trackableId, trackableId),
-    columns: {
-      payload: true,
-    },
-  })
+  const events = await apiLogCache.getLogsForTrackable(trackableId)
 
   const fields = new Set<string>()
 
@@ -46,31 +42,17 @@ export async function getTrackableUsageAggregateFields(trackableId: string) {
 }
 
 export async function getTrackableUsageEvents(input: UsageEventSearchInput) {
-  const conditions = [eq(trackableApiUsageEvents.trackableId, input.trackableId)]
+  let logs = await apiLogCache.getLogsForTrackable(input.trackableId)
 
   if (input.from) {
-    conditions.push(gte(trackableApiUsageEvents.occurredAt, new Date(input.from)))
+    const fromTime = new Date(input.from).getTime()
+    logs = logs.filter((log) => log.occurredAt.getTime() >= fromTime)
   }
 
   if (input.to) {
-    conditions.push(lte(trackableApiUsageEvents.occurredAt, new Date(input.to)))
+    const toTime = new Date(input.to).getTime()
+    logs = logs.filter((log) => log.occurredAt.getTime() <= toTime)
   }
 
-  return db.query.trackableApiUsageEvents.findMany({
-    where:
-      conditions.length === 1
-        ? conditions[0]
-        : and(...conditions),
-    with: {
-      apiKey: {
-        columns: {
-          id: true,
-          name: true,
-          keyPrefix: true,
-          lastFour: true,
-        },
-      },
-    },
-    orderBy: (table, { desc }) => [desc(table.occurredAt)],
-  })
+  return logs
 }
