@@ -1,8 +1,8 @@
 import { auth } from "@clerk/nextjs/server"
 import { TRPCError, initTRPC } from "@trpc/server"
 
-import { ensureUserProvisioned } from "@/server/user-provisioning"
 import { logger } from "@/lib/logger"
+import { ensureUserProvisioned } from "@/server/user-provisioning"
 
 export async function createTRPCContext() {
   return {

@@ -1,8 +1,8 @@
 import "server-only"
 
-import { redis } from "./redis-client"
-import { BaseCacheRepository } from "./base-cache.repository"
 import { logger } from "@/lib/logger"
+import { BaseCacheRepository } from "./base-cache.repository"
+import { redis } from "./redis-client"
 
 export class CounterCacheRepository extends BaseCacheRepository<number> {
   constructor(prefix: string) {
@@ -40,10 +40,7 @@ export class CounterCacheRepository extends BaseCacheRepository<number> {
   async getCount(id: string): Promise<number> {
     const key = this.getKey(id)
     const data = await redis.get(key)
-    const count = data ? parseInt(data, 10) : 0
-    
-    logger.debug({ cacheKey: key, count }, "Counter GET completed")
-    
+    const count = data ? parseInt(data, 10) : 0    
     return count
   }
 }

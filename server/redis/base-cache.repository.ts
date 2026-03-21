@@ -32,13 +32,12 @@ export abstract class BaseCacheRepository<T> {
     const key = this.getKey(id)
     const data = await redis.get(key)
     if (!data) {
-      logger.debug({ cacheKey: key }, "Cache MISS (Raw)")
       return null
     }
 
     try {
       const parsed = superjson.parse(data) as T
-      logger.debug({ cacheKey: key }, "Cache HIT (Raw)")
+      logger.info({ cacheKey: key }, "Cache HIT")
       return parsed
     } catch (err) {
       logger.error({ cacheKey: key, error: err }, "Failed to parse cache entry")
@@ -60,7 +59,7 @@ export abstract class BaseCacheRepository<T> {
     const fallbackData = await this.fetchFallback(id)
     const durationMs = Date.now() - start
     
-    logger.info({ cacheKey: this.getKey(id), durationMs, hasData: fallbackData !== null }, "Cache fallback executed")
+    logger.debug({ cacheKey: this.getKey(id), durationMs, hasData: fallbackData !== null }, "Cache fallback executed")
 
     if (fallbackData !== null) {
       await this.set(id, fallbackData)

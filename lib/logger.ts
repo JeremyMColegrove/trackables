@@ -1,11 +1,13 @@
 import pino from "pino";
+import pinoPretty from "pino-pretty";
 
-export const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-    },
-  },
+const stream = pinoPretty({
+  colorize: true,
 });
+
+export const logger = pino(
+  {
+    level: process.env.LOG_LEVEL || "info",
+  },
+  stream
+);
