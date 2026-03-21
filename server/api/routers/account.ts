@@ -6,6 +6,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { users } from "@/db/schema"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
+import { userActiveWorkspaceCache } from "@/server/redis/access-control-cache.repository"
 import {
   createWorkspaceForUser,
   getWorkspaceMemberships,
@@ -92,6 +93,8 @@ export const accountRouter = createTRPCRouter({
           updatedAt: new Date(),
         })
         .where(eq(users.id, userId))
+
+      await userActiveWorkspaceCache.set(userId, input.workspaceId)
 
       return {
         ok: true,
