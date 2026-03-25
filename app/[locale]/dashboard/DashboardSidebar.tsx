@@ -11,11 +11,13 @@ import {
 	SidebarGroup,
 	SidebarGroupContent,
 	SidebarMenu,
+	SidebarMenuBadge,
 	SidebarMenuButton,
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import { isSubscriptionEnforcementEnabled } from "@/lib/subscription-enforcement";
+import { useAppSettings } from "@/components/app-settings-provider";
+import { useWorkspaceContext } from "@/app/[locale]/dashboard/workspace-context-provider";
 import type { SubscriptionTier } from "@/server/subscriptions/types";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
@@ -24,20 +26,17 @@ import { usePathname } from "next/navigation";
 import * as React from "react";
 
 export function DashboardSidebar() {
-	const subscriptionsEnabled = isSubscriptionEnforcementEnabled();
+	const { subscriptionsEnabled } = useAppSettings();
+	const { currentTier, hasAdminControls } = useWorkspaceContext();
+	const trpc = useTRPC();
 	const pathname = usePathname();
 	const { setOpenMobile } = useSidebar();
-	const trpc = useTRPC();
-	const workspaceContext = useQuery(
-		trpc.account.getWorkspaceContext.queryOptions(),
-	);
-	const currentTier = workspaceContext.data?.activeWorkspace.tier ?? "free";
-	const navItems = getDashboardNavItems(
-		workspaceContext.data?.hasAdminControls ?? false,
-	);
+	const navItems = getDashboardNavItems(hasAdminControls);
 	const [tierDialogOpen, setTierDialogOpen] = React.useState(false);
 	const [dialogTier, setDialogTier] =
 		React.useState<SubscriptionTier>(currentTier);
+	const memberCountQuery = useQuery(trpc.team.getMemberCount.queryOptions());
+	const teamMemberCount = memberCountQuery.data?.count;
 
 	function handleOpenTierDialog(tier: SubscriptionTier) {
 		setDialogTier(tier);
@@ -71,6 +70,10 @@ export function DashboardSidebar() {
 											<span>{item.label}</span>
 										</Link>
 									</SidebarMenuButton>
+									{item.href === "/dashboard/team" &&
+									typeof teamMemberCount === "number" ? (
+										<SidebarMenuBadge>{teamMemberCount}</SidebarMenuBadge>
+									) : null}
 								</SidebarMenuItem>
 							))}
 						</SidebarMenu>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useWorkspaceContext } from "@/app/[locale]/dashboard/workspace-context-provider";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { isSubscriptionEnforcementEnabled } from "@/lib/subscription-enforcement";
+import { useAppSettings } from "@/components/app-settings-provider";
 import { getTierLimits } from "@/lib/workspace-tier-config";
 import { useTRPC } from "@/trpc/client";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -141,14 +142,11 @@ function TrackableSettingsPanel({ searchQuery }: { searchQuery: string }) {
 	const trackable = useTrackableDetails();
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
-	const subscriptionsEnabled = isSubscriptionEnforcementEnabled();
-	const workspaceContext = useQuery(
-		trpc.account.getWorkspaceContext.queryOptions(),
-	);
+	const { subscriptionsEnabled } = useAppSettings();
+	const { currentTier } = useWorkspaceContext();
 	const trackableQueryKey = trpc.trackables.getById.queryKey({
 		id: trackable.id,
 	});
-	const currentTier = workspaceContext.data?.activeWorkspace.tier ?? "free";
 	const maxLogRetentionDays = subscriptionsEnabled
 		? getTierLimits(currentTier).logRetentionDays
 		: null;

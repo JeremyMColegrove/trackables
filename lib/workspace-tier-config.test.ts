@@ -12,7 +12,7 @@ test("workspace tier config exposes the enforced free-tier limits", () => {
     maxTrackableItems: 10,
     maxResponsesPerSurvey: 100,
     maxWorkspaceMembers: 2,
-    maxApiLogsPerSecond: 1,
+    maxApiLogsPerMinute: 30,
     logRetentionDays: 3,
   })
 })
@@ -25,7 +25,7 @@ test("workspace tier plans expose highlights derived from enforced limits", () =
     "2 workspace members",
     "10 active trackables",
     "100 responses per survey",
-    "1 API log per second",
+    "30 API logs per minute",
     "3-day API log retention",
   ])
 

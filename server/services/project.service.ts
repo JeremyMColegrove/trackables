@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 import type { TrackableKind, TrackableSettings } from "@/db/schema/types";
 import { accessControlService } from "@/server/services/access-control.service";
+import { getDefaultTrackableSettings } from "@/server/services/project-settings";
 import { quotaService } from "@/server/subscriptions/quota.service";
 
 function generateSlug(name: string) {
@@ -234,6 +235,12 @@ export class ProjectService {
 			input.userId,
 		);
 		await quotaService.assertCanCreateTrackable(activeWorkspace.workspaceId);
+		const maxLogRetentionDays =
+			input.kind === "api_ingestion"
+				? await quotaService.getEffectiveLogRetentionDays(
+						activeWorkspace.workspaceId,
+					)
+				: null;
 		const slug = generateSlug(input.name);
 
 		const [newTrackable] = await db.transaction(async (tx) => {
@@ -245,6 +252,10 @@ export class ProjectService {
 					name: input.name,
 					description: input.description,
 					slug,
+					settings: getDefaultTrackableSettings({
+						kind: input.kind,
+						maxLogRetentionDays,
+					}),
 				})
 				.returning();
 

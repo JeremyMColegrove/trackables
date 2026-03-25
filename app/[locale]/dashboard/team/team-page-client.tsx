@@ -1,6 +1,8 @@
 "use client";
 
+import { useWorkspaceContext } from "@/app/[locale]/dashboard/workspace-context-provider";
 import { WorkspaceTierDialog } from "@/app/[locale]/dashboard/workspace-tier-dialog";
+import { useAppSettings } from "@/components/app-settings-provider";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { PageShell } from "@/components/page-shell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,7 +28,6 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isWorkspaceMemberLimitMessage } from "@/lib/subscription-limit-messages";
-import { isSubscriptionEnforcementEnabled } from "@/lib/subscription-enforcement";
 import { getTierLimits } from "@/lib/workspace-tier-config";
 import type { SubscriptionTier } from "@/server/subscriptions/types";
 import { useTRPC } from "@/trpc/client";
@@ -339,7 +340,7 @@ function InviteMemberDialog({
 						</div>
 					</div>
 
-					<div className="flex max-h-80 flex-col gap-2 overflow-y-auto">
+					<div className="flex max-h-80 flex-col gap-2 pb-4 overflow-y-auto">
 						{!hasEnoughCharacters ? (
 							<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
 								<T>Type at least 2 characters to search for users.</T>
@@ -410,7 +411,9 @@ export function TeamPageClient() {
 function TeamPageContent() {
 	const gt = useGT();
 	const { user } = useUser();
-	const subscriptionsEnabled = isSubscriptionEnforcementEnabled();
+	const { subscriptionsEnabled } = useAppSettings();
+	const { currentTier, isLoading: isWorkspaceContextLoading } =
+		useWorkspaceContext();
 	const [memberToRemove, setMemberToRemove] = useState<TeamMemberRow | null>(
 		null,
 	);
@@ -420,19 +423,16 @@ function TeamPageContent() {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const membersQuery = useQuery(trpc.team.listMembers.queryOptions());
-	const workspaceContext = useQuery(
-		trpc.account.getWorkspaceContext.queryOptions(),
-	);
 	const myInvitationsQuery = useQuery(
 		trpc.team.listMyPendingInvitations.queryOptions(),
 	);
 
 	const members = useMemo(() => membersQuery.data ?? [], [membersQuery.data]);
 	const currentUserId = user?.id ?? null;
-	const currentTier = workspaceContext.data?.activeWorkspace.tier ?? "free";
 	const maxWorkspaceMembers = getTierLimits(currentTier).maxWorkspaceMembers;
 	const isCheckingMemberLimit =
-		subscriptionsEnabled && (workspaceContext.isLoading || membersQuery.isLoading);
+		subscriptionsEnabled &&
+		(isWorkspaceContextLoading || membersQuery.isLoading);
 	const hasReachedMemberLimit =
 		subscriptionsEnabled &&
 		maxWorkspaceMembers !== null &&

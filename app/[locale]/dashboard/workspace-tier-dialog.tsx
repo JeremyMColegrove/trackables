@@ -6,6 +6,7 @@ import { CheckIcon, SparklesIcon } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
 	Dialog,
 	DialogContent,
@@ -54,7 +55,8 @@ export function WorkspaceTierDialog({
 						<DialogDescription className="mx-auto max-w-lg text-center text-sm text-white/80 sm:text-[15px]">
 							<T>
 								Select the perfect plan for your workspace needs. Upgrade
-								anytime as you grow.
+								anytime as you grow. All paid plans are billed per workspace
+								per month.
 							</T>
 						</DialogDescription>
 					</DialogHeader>
@@ -80,9 +82,18 @@ export function WorkspaceTierDialog({
 									isCurrent && !isMostPopular ? "bg-muted/20 border-border" : "",
 								)}
 							>
-								{isMostPopular && (
-									<div className="absolute -top-3 left-0 right-0 mx-auto w-fit rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground shadow-sm">
-										Most Popular
+								{(isCurrent || isMostPopular) && (
+									<div className="absolute -top-3 left-1/2 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 sm:flex-row">
+										{isCurrent ? (
+											<Badge className="h-auto rounded-full bg-emerald-600 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm hover:bg-emerald-600">
+												Current Plan
+											</Badge>
+										) : null}
+										{isMostPopular ? (
+											<Badge className="h-auto rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground shadow-sm hover:bg-primary">
+												Best Seller
+											</Badge>
+										) : null}
 									</div>
 								)}
 
@@ -97,8 +108,10 @@ export function WorkspaceTierDialog({
 
 								<div className="mb-4 flex items-end gap-1.5 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
 									{plan.priceLabel}
-									<span className="text-xs font-medium text-muted-foreground sm:text-sm">
-										{plan.priceInterval}
+									<span className="pb-1 text-xs font-medium leading-tight text-muted-foreground sm:text-sm">
+										per workspace
+										<br />
+										per month
 									</span>
 								</div>
 

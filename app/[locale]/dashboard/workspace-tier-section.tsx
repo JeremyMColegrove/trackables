@@ -1,11 +1,10 @@
 "use client";
 
+import { useWorkspaceContext } from "@/app/[locale]/dashboard/workspace-context-provider";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { getWorkspaceTierPlan } from "@/lib/workspace-tier-config";
 import type { SubscriptionTier } from "@/server/subscriptions/types";
-import { useTRPC } from "@/trpc/client";
-import { useQuery } from "@tanstack/react-query";
 import { T } from "gt-next";
 
 export function WorkspaceTierSection({
@@ -13,16 +12,12 @@ export function WorkspaceTierSection({
 }: {
 	onOpenDialog: (currentTier: SubscriptionTier) => void;
 }) {
+	const { currentTier, isLoading } = useWorkspaceContext();
 	const { setOpenMobile } = useSidebar();
-	const trpc = useTRPC();
-	const workspaceContext = useQuery(
-		trpc.account.getWorkspaceContext.queryOptions(),
-	);
 
 	// Wait until loading finishes to avoid flicker
-	if (workspaceContext.isLoading) return null;
+	if (isLoading) return null;
 
-	const currentTier = workspaceContext.data?.activeWorkspace.tier ?? "free";
 	const plan = getWorkspaceTierPlan(currentTier);
 	const isHighestTier = currentTier === "pro";
 

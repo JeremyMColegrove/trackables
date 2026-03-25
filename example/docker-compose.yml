@@ -15,6 +15,7 @@ services:
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: ${NEXT_PUBLIC_CLERK_SIGN_IN_URL:-/sign-in}
       NEXT_PUBLIC_CLERK_SIGN_UP_URL: ${NEXT_PUBLIC_CLERK_SIGN_UP_URL:-/sign-up}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      ENABLE_SUBSCRIPTIONS: ${ENABLE_SUBSCRIPTIONS:-false}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     ports:
       - 3000:3000
@@ -59,4 +60,3 @@ services:
       command: tunnel --no-autoupdate run --token
             eyJhIjoiMTI3YzM5Yzk5NTc0ZDIyODVhOGNhYTQ4N2M0ZmU2MWMiLCJ0IjoiYTM4MGVlNGYtOWVjZi00Yjg5LTgyYWItYzdjYjg1NDcxOGQ5IiwicyI6Ik5HRmtNV1JpWXpjdFpqRTJOaTAwTXpjM0xXRmxPVGt0TXpSaE5tTmpNV0UyTVRGbSJ9
       restart: unless-stopped
-

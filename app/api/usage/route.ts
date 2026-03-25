@@ -97,7 +97,7 @@ export async function POST(request: Request) {
         {
           status: getErrorStatus(error),
           headers: isApiLogRateLimitMessage(error.message)
-            ? { "Retry-After": "1" }
+            ? { "Retry-After": "60" }
             : undefined,
         }
       )

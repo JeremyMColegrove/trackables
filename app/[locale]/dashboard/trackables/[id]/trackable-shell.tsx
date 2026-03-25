@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserAccountButton } from "@/components/user-account-button";
-import { isSubscriptionEnforcementEnabled } from "@/lib/subscription-enforcement";
+import { useAppSettings } from "@/components/app-settings-provider";
 import {
 	getTrackableKindShortLabel,
 	getTrackableKindVisuals,
@@ -232,7 +232,7 @@ function TrackableShellError({
 }
 
 function TrackableSidebarNav({ trackable }: { trackable: TrackableDetails }) {
-	const subscriptionsEnabled = isSubscriptionEnforcementEnabled();
+	const { subscriptionsEnabled } = useAppSettings();
 	const gt = useGT();
 	const locale = useLocale();
 	const pathname = usePathname();

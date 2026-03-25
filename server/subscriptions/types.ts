@@ -13,8 +13,8 @@ export interface TierLimits {
   maxResponsesPerSurvey: number | null
   /** Maximum active members per workspace. `null` = unlimited. */
   maxWorkspaceMembers: number | null
-  /** Maximum API log events per second per workspace. `null` = unlimited. */
-  maxApiLogsPerSecond: number | null
+  /** Maximum API log events per minute per workspace. `null` = unlimited. */
+  maxApiLogsPerMinute: number | null
   /** Maximum log retention in days. `null` = forever. */
   logRetentionDays: number | null
 }

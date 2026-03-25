@@ -52,7 +52,7 @@ export function CreateApiKeyDialog({
 	trackableId,
 	onCreated,
 }: CreateApiKeyDialogProps) {
-    const gt = useGT();
+	const gt = useGT();
 	const [open, setOpen] = useState(false);
 	const [createdKey, setCreatedKey] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
@@ -88,16 +88,29 @@ export function CreateApiKeyDialog({
 		}),
 	);
 
+	function resetDialogState() {
+		setCreatedKey(null);
+		setCopied(false);
+		form.reset({
+			name: "",
+			expirationPreset: "never",
+		});
+	}
+
+	function closeDialog() {
+		resetDialogState();
+		setOpen(false);
+	}
+
 	function handleOpenChange(nextOpen: boolean) {
+		if (nextOpen) {
+			resetDialogState();
+		}
+
 		setOpen(nextOpen);
 
 		if (!nextOpen) {
-			setCreatedKey(null);
-			setCopied(false);
-			form.reset({
-				name: "",
-				expirationPreset: "never",
-			});
+			resetDialogState();
 		}
 	}
 
@@ -157,7 +170,7 @@ export function CreateApiKeyDialog({
 								<Copy className="size-4" />
 								{copied ? "Copied" : "Copy key"}
 							</Button>
-							<Button type="button" onClick={() => setOpen(false)}>
+							<Button type="button" onClick={closeDialog}>
 								
                                 								<T>Done</T>
                                 							</Button>
@@ -222,7 +235,7 @@ export function CreateApiKeyDialog({
 									<Button
 										type="button"
 										variant="outline"
-										onClick={() => setOpen(false)}
+										onClick={closeDialog}
 										disabled={isSubmitting}
 									>
 										

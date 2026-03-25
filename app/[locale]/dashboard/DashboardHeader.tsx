@@ -1,6 +1,7 @@
 "use client";
 
 import { CreateWorkspaceDialog } from "@/app/[locale]/dashboard/CreateWorkspaceDialog";
+import { useWorkspaceContext } from "@/app/[locale]/dashboard/workspace-context-provider";
 import {
 	Select,
 	SelectContent,
@@ -14,7 +15,7 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserAccountButton } from "@/components/user-account-button";
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { T, useGT } from "gt-next";
 import { Plus, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -31,12 +32,8 @@ export function DashboardHeader() {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const router = useRouter();
-	const workspaceContext = useQuery(
-		trpc.account.getWorkspaceContext.queryOptions(),
-	);
-	const canManageActiveWorkspace =
-		workspaceContext.data?.activeWorkspace.role === "owner" ||
-		workspaceContext.data?.activeWorkspace.role === "admin";
+	const { activeWorkspace, canManageActiveWorkspace, workspaces } =
+		useWorkspaceContext();
 
 	async function invalidateWorkspaceQueries() {
 		await Promise.all([
@@ -89,7 +86,7 @@ export function DashboardHeader() {
 					</div>
 					<div className="flex min-w-0 items-center gap-3 ">
 						<Select
-							value={workspaceContext.data?.activeWorkspace.id}
+							value={activeWorkspace?.id}
 							onValueChange={handleWorkspaceChange}
 						>
 							<SelectTrigger className="w-fit border-none">
@@ -100,7 +97,7 @@ export function DashboardHeader() {
 									<SelectLabel>
 										<T>Workspaces</T>
 									</SelectLabel>
-									{(workspaceContext.data?.workspaces ?? []).map(
+									{workspaces.map(
 										(workspace) => (
 											<SelectItem key={workspace.id} value={workspace.id}>
 												{workspace.name}

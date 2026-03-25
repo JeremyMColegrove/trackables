@@ -19,12 +19,12 @@ export function isWorkspaceMemberLimitMessage(message: string) {
 }
 
 export function getApiLogRateLimitMessage(limit: number) {
-  return `You have exceeded the maximum of ${limit} API log attempts per second for your plan. Please upgrade for a higher logging rate.`
+  return `You have exceeded the maximum of ${limit} API log attempts per minute for your plan. Please upgrade for a higher logging rate.`
 }
 
 export function isApiLogRateLimitMessage(message: string) {
   return (
     message.startsWith("You have exceeded the maximum of ") &&
-    message.includes("API log attempts per second")
+    message.includes("API log attempts per minute")
   )
 }

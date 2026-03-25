@@ -1,6 +1,7 @@
 "use client";
 
 import { WorkspaceTierDialog } from "@/app/[locale]/dashboard/workspace-tier-dialog";
+import { useWorkspaceContext } from "@/app/[locale]/dashboard/workspace-context-provider";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -24,7 +25,7 @@ import {
 	getTrackableKindCreationLabel,
 	getTrackableKindVisuals,
 } from "@/lib/trackable-kind";
-import { isSubscriptionEnforcementEnabled } from "@/lib/subscription-enforcement";
+import { useAppSettings } from "@/components/app-settings-provider";
 import { cn } from "@/lib/utils";
 import { getTierLimits } from "@/lib/workspace-tier-config";
 import { useTRPC } from "@/trpc/client";
@@ -242,16 +243,15 @@ export function CreateTrackableDialog() {
 	const trpc = useTRPC();
 	const router = useRouter();
 	const queryClient = useQueryClient();
-	const subscriptionsEnabled = isSubscriptionEnforcementEnabled();
-	const workspaceContext = useQuery(
-		trpc.account.getWorkspaceContext.queryOptions(),
-	);
+	const { subscriptionsEnabled } = useAppSettings();
+	const { currentTier, isLoading: isWorkspaceContextLoading } =
+		useWorkspaceContext();
 	const metrics = useQuery(trpc.dashboard.getMetrics.queryOptions());
-	const currentTier = workspaceContext.data?.activeWorkspace.tier ?? "free";
 	const maxTrackableItems = getTierLimits(currentTier).maxTrackableItems;
 	const activeTrackablesCount = metrics.data?.activeTrackablesCount ?? 0;
 	const isCheckingTrackableLimit =
-		subscriptionsEnabled && (workspaceContext.isLoading || metrics.isLoading);
+		subscriptionsEnabled &&
+		(isWorkspaceContextLoading || metrics.isLoading);
 	const hasReachedTrackableLimit =
 		subscriptionsEnabled &&
 		maxTrackableItems !== null &&

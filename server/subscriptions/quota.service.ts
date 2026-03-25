@@ -129,18 +129,18 @@ export class QuotaService {
 
     const limits = await subscriptionService.getWorkspaceLimits(workspaceId)
 
-    if (limits.maxApiLogsPerSecond === null) {
+    if (limits.maxApiLogsPerMinute === null) {
       return
     }
 
-    const currentSecond = Math.floor(Date.now() / 1000)
-    const counterKey = `${workspaceId}:${currentSecond}`
-    const count = await apiLogsRateLimitCache.incrementWindow(counterKey, 1, 2)
+    const currentMinute = Math.floor(Date.now() / 60_000)
+    const counterKey = `${workspaceId}:${currentMinute}`
+    const count = await apiLogsRateLimitCache.incrementWindow(counterKey, 1, 60)
 
-    if (count > limits.maxApiLogsPerSecond) {
+    if (count > limits.maxApiLogsPerMinute) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: getApiLogRateLimitMessage(limits.maxApiLogsPerSecond),
+        message: getApiLogRateLimitMessage(limits.maxApiLogsPerMinute),
       })
     }
   }

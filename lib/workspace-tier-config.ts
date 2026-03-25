@@ -46,9 +46,9 @@ function buildTierHighlights(limits: TierLimits): string[] {
 			"responses per survey",
 		),
 		formatUsageLimit(
-			limits.maxApiLogsPerSecond,
-			"API log per second",
-			"API logs per second",
+			limits.maxApiLogsPerMinute,
+			"API log per minute",
+			"API logs per minute",
 		),
 		limits.logRetentionDays === null
 			? "Unlimited API log retention"
@@ -60,7 +60,7 @@ const FREE_LIMITS: TierLimits = {
 	maxTrackableItems: 10,
 	maxResponsesPerSurvey: 100,
 	maxWorkspaceMembers: 2,
-	maxApiLogsPerSecond: 1,
+	maxApiLogsPerMinute: 30,
 	logRetentionDays: 3,
 };
 
@@ -68,7 +68,7 @@ const PLUS_LIMITS: TierLimits = {
 	maxTrackableItems: 100,
 	maxResponsesPerSurvey: null,
 	maxWorkspaceMembers: 100,
-	maxApiLogsPerSecond: 10,
+	maxApiLogsPerMinute: 60,
 	logRetentionDays: 90,
 };
 
@@ -76,7 +76,7 @@ const PRO_LIMITS: TierLimits = {
 	maxTrackableItems: null,
 	maxResponsesPerSurvey: null,
 	maxWorkspaceMembers: null,
-	maxApiLogsPerSecond: null,
+	maxApiLogsPerMinute: 600,
 	logRetentionDays: null,
 };
 

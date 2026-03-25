@@ -1,3 +1,4 @@
+import { AppSettingsProvider } from "@/components/app-settings-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TRPCReactProvider } from "@/components/trpc-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -78,13 +79,15 @@ export default async function RootLayout({
         >
           <GTProvider>
             <TRPCReactProvider>
-              <TooltipProvider>
-                <ThemeProvider>
-                  {children}
-                  {auth}
-                  <Toaster position="top-center" />
-                </ThemeProvider>
-              </TooltipProvider>
+              <AppSettingsProvider>
+                <TooltipProvider>
+                  <ThemeProvider>
+                    {children}
+                    {auth}
+                    <Toaster position="top-center" />
+                  </ThemeProvider>
+                </TooltipProvider>
+              </AppSettingsProvider>
             </TRPCReactProvider>
           </GTProvider>
         </ClerkProvider>

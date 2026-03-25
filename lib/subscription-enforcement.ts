@@ -1,11 +1,11 @@
 export function isSubscriptionEnforcementEnabledValue(
-  value: string | undefined
+	value: string | undefined,
 ): boolean {
-  return value === "true"
+	return value?.trim() === "true";
 }
 
 export function isSubscriptionEnforcementEnabled(): boolean {
-  return isSubscriptionEnforcementEnabledValue(
-    process.env.ENABLE_SUBSCRIPTIONS
-  )
+	return isSubscriptionEnforcementEnabledValue(
+		process.env.ENABLE_SUBSCRIPTIONS,
+	);
 }
