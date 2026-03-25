@@ -23,25 +23,13 @@ Try out a hosted version [here](https://trackables.org).
 
 ## Supported Languages
 
-Trackable currently supports the following languages:
+Trackable currently supports English (`en`), Spanish (`es`), French (`fr`), Arabic (`ar`), Portuguese (`pt`), Chinese, Simplified (`zh-CN`), Hindi (`hi`), German (`de`), Japanese (`ja`), Indonesian (`id`), Russian (`ru`), Korean (`ko`), Turkish (`tr`), Italian (`it`), Dutch (`nl`), Polish (`pl`), and Vietnamese (`vi`).
 
-- English (`en`)
-- Spanish (`es`)
-- French (`fr`)
-- Arabic (`ar`)
-- Portuguese (`pt`)
-- Chinese, Simplified (`zh-CN`)
-- Hindi (`hi`)
-- German (`de`)
-- Japanese (`ja`)
-- Indonesian (`id`)
-- Russian (`ru`)
-- Korean (`ko`)
-- Turkish (`tr`)
-- Italian (`it`)
-- Dutch (`nl`)
-- Polish (`pl`)
-- Vietnamese (`vi`)
+## Team Collaboration & Permissions
+
+- Organize trackables inside shared workspaces and invite teammates.
+- Use workspace roles for access control: owner, admin, member, and viewer.
+- Share individual trackables through public links, direct user grants, or email grants.
 
 ## Example Use Cases
 
