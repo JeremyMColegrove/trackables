@@ -2,33 +2,26 @@ import { auth } from "@clerk/nextjs/server"
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
-import { buildAbsoluteUrl, siteConfig } from "@/lib/site-config"
+import { createPageMetadata } from "@/lib/seo"
+import { siteConfig } from "@/lib/site-config"
 import { LandingPage } from "./landing-page"
 
 export const dynamic = "force-dynamic"
 
-export function generateMetadata(): Metadata {
-  const homePageUrl = buildAbsoluteUrl("/")
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
 
-  return {
-    title: siteConfig.title,
+  return createPageMetadata({
+    title: siteConfig.homeTitle,
     description: siteConfig.description,
-    alternates: {
-      canonical: homePageUrl,
-    },
-    openGraph: {
-      type: "website",
-      siteName: siteConfig.name,
-      url: homePageUrl,
-      title: siteConfig.title,
-      description: siteConfig.description,
-    },
-    twitter: {
-      card: "summary",
-      title: siteConfig.title,
-      description: siteConfig.description,
-    },
-  }
+    pathname: "/",
+    locale,
+    useAbsoluteTitle: true,
+  })
 }
 
 export default async function Page() {

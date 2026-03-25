@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /api
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /*/dashboard
+Disallow: /*/dashboard/
+Disallow: /*/sign-in
+Disallow: /*/sign-up
+Sitemap: https://trackables.org/sitemap.xml
+Host: https://trackables.org

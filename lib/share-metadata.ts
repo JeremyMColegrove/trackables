@@ -1,5 +1,5 @@
 import { getActiveShareLink } from "@/lib/trackable-share-links"
-import { buildAbsoluteUrl } from "@/lib/site-config"
+import { buildLocalizedUrl } from "@/lib/seo"
 
 const maxDescriptionLength = 160
 const maxFormTitleLength = 80
@@ -14,7 +14,7 @@ function trimText(value: string, maxLength: number) {
   return `${value.slice(0, maxLength - 1).trimEnd()}…`
 }
 
-export async function getShareMetadataContent(token: string) {
+export async function getShareMetadataContent(token: string, locale?: string) {
   const shareLink = await getActiveShareLink(token)
 
   if (!shareLink?.trackable) {
@@ -48,6 +48,6 @@ export async function getShareMetadataContent(token: string) {
     description,
     formTitle,
     projectName,
-    shareUrl: buildAbsoluteUrl(`/share/${token}`),
+    shareUrl: buildLocalizedUrl(`/share/${token}`, locale).toString(),
   }
 }

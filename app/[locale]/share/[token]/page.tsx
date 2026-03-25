@@ -14,14 +14,14 @@ export function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ token: string }>
+  params: Promise<{ locale: string; token: string }>
 }): Promise<Metadata> {
-  const { token } = await params
-  const shareMetadata = await getShareMetadataContent(token)
+  const { locale, token } = await params
+  const shareMetadata = await getShareMetadataContent(token, locale)
 
   if (!shareMetadata) {
     return {
-      title: `Survey unavailable`,
+      title: "Survey unavailable",
       description:
         "This shared survey link is invalid, expired, or no longer accepting responses.",
       robots: {
@@ -36,6 +36,10 @@ export async function generateMetadata({
   return {
     title,
     description: shareMetadata.description,
+    robots: {
+      index: false,
+      follow: false,
+    },
     alternates: {
       canonical: shareMetadata.shareUrl,
     },
@@ -47,7 +51,7 @@ export async function generateMetadata({
       description: shareMetadata.description,
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title,
       description: shareMetadata.description,
     },

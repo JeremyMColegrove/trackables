@@ -1,0 +1,27 @@
+# Trackable
+
+> Trackable is a web app for creating shareable forms, collecting structured responses, and tracking API usage events.
+
+## What the site does
+- Create trackable items for forms, surveys, and usage tracking.
+- Share forms with a public link, named users, or specific email addresses.
+- Collect structured responses from shared forms.
+- Record API usage events with API keys and attached metadata.
+- Review submissions and usage history in an authenticated dashboard.
+
+## Public pages
+- Home: https://trackables.org/
+- Terms of Service: https://trackables.org/terms
+- Privacy Statement: https://trackables.org/privacy
+
+## Discovery
+- Sitemap: https://trackables.org/sitemap.xml
+- Robots: https://trackables.org/robots.txt
+- Security: https://trackables.org/security.txt
+
+## Source
+- GitHub: https://github.com/JeremyMColegrove/trackable
+
+## Crawling guidance
+- The public marketing and legal pages are indexable.
+- Sign-in, sign-up, dashboard, API, and tokenized shared form routes are not part of the public index.

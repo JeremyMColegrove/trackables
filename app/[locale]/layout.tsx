@@ -3,12 +3,14 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { TRPCReactProvider } from "@/components/trpc-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { getClerkLocalization } from "@/lib/clerk-localization"
+import { supportedLocales } from "@/lib/discovery-files"
 import { buildAbsoluteUrl, siteConfig } from "@/lib/site-config"
 import { cn } from "@/lib/utils"
 import { ClerkProvider } from "@clerk/nextjs"
 import { GTProvider } from "gt-next"
 import type { Metadata } from "next"
 import { Geist_Mono, Inter } from "next/font/google"
+import { notFound } from "next/navigation"
 import { Toaster } from "sonner"
 import "../globals.css"
 
@@ -40,7 +42,7 @@ export const metadata: Metadata = {
     description: siteConfig.description,
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: siteConfig.title,
     description: siteConfig.description,
   },
@@ -56,6 +58,11 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>
 }>) {
   const { locale } = await params
+
+  if (!supportedLocales.includes(locale)) {
+    notFound()
+  }
+
   const signInUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL ?? "/sign-in"
   const signUpUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL ?? "/sign-up"
   const clerkLocalization = getClerkLocalization(locale)

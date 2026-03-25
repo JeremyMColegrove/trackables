@@ -1,27 +1,35 @@
-import { LegalDocumentPage } from "@/components/legal-document-page";
-import { readLegalDocument } from "@/lib/legal-documents";
-import { buildAbsoluteUrl, siteConfig } from "@/lib/site-config";
-import { getGT } from "gt-node";
-import type { Metadata } from "next";
+import type { Metadata } from "next"
 
-const pathname = "/terms";
+import { LegalDocumentPage } from "@/components/legal-document-page"
+import { createPageMetadata } from "@/lib/seo"
+import { siteConfig } from "@/lib/site-config"
+import { getTermsDocumentContent } from "./terms-document-content"
 
-export const metadata: Metadata = {
-	title: "Terms of Service",
-	description: `Terms of Service for ${siteConfig.name}.`,
-	alternates: {
-		canonical: buildAbsoluteUrl(pathname).toString(),
-	},
-};
+const pathname = "/terms"
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
+
+  return createPageMetadata({
+    title: "Terms of Service",
+    description: `Read the Terms of Service for ${siteConfig.name}.`,
+    pathname,
+    locale,
+  })
+}
 
 export default async function TermsPage() {
-	const gt = await getGT();
-	const content = await readLegalDocument("terms");
+  const document = getTermsDocumentContent()
 
-	return (
-		<LegalDocumentPage
-			title={gt("Terms of Service") ?? "Terms of Service"}
-			content={content}
-		/>
-	);
+  return (
+    <LegalDocumentPage
+      title={document.title}
+      effectiveDate={document.effectiveDate}
+      sections={document.sections}
+    />
+  )
 }
