@@ -21,14 +21,14 @@ export function AppBrand({
 		<Link href={href} className={`flex items-center gap-2 ${className}`}>
 			<Image
 				src={iosSmallIcon}
-				alt={gt("Trackable logo")}
+				alt={gt("Trackables logo")}
 				width={24}
 				height={24}
 				className="h-6 w-6 rounded-sm"
 				priority
 			/>
 			<span className={collapseTextOnMobile ? "hidden sm:inline" : undefined}>
-				<T>Trackable.</T>
+				<T>Trackables.</T>
 			</span>
 		</Link>
 	);

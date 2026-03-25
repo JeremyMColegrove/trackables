@@ -21,13 +21,11 @@ import {
 import type { SubscriptionTier } from "@/server/subscriptions/types";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
-import { useGT } from "gt-next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 
 export function DashboardSidebar() {
-	const gt = useGT();
 	const { subscriptionsEnabled } = useAppSettings();
 	const { currentTier, hasAdminControls } = useWorkspaceContext();
 	const trpc = useTRPC();
