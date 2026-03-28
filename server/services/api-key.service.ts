@@ -10,8 +10,8 @@ import {
   resolveApiKeyExpiration,
 } from "@/server/api-keys"
 import { accessControlService } from "@/server/services/access-control.service"
-import { assertTrackableKind } from "@/server/services/project.service"
 import { apiKeyCache } from "@/server/redis/api-key-cache.repository"
+import { assertTrackableKind } from "@/server/services/trackable-kind"
 
 export class ApiKeyService {
   async createApiKey(input: {
@@ -20,7 +20,7 @@ export class ApiKeyService {
     name: string
     expirationPreset: "never" | "30_days" | "60_days" | "90_days"
   }) {
-    const trackable = await accessControlService.assertProjectAccess(
+    const trackable = await accessControlService.assertTrackableAccess(
       input.trackableId,
       input.userId,
       "manage"
@@ -67,7 +67,7 @@ export class ApiKeyService {
     userId: string
     apiKeyId: string
   }) {
-    await accessControlService.assertProjectAccess(
+    await accessControlService.assertTrackableAccess(
       input.trackableId,
       input.userId,
       "manage"

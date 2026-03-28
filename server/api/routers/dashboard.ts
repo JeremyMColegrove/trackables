@@ -1,4 +1,3 @@
-import { TRPCError } from "@trpc/server"
 import { and, desc, eq, gte, isNull, sum } from "drizzle-orm"
 
 import { db } from "@/db"
@@ -8,7 +7,11 @@ import {
   trackableItems,
 } from "@/db/schema"
 import { accessControlService } from "@/server/services/access-control.service"
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
+import {
+  createTRPCRouter,
+  getRequiredUserId,
+  protectedProcedure,
+} from "@/server/api/trpc"
 
 const ACTIVITY_WINDOW_DAYS = 7
 const DAY_IN_MS = 24 * 60 * 60 * 1000
@@ -36,15 +39,11 @@ function getDayOffset(date: Date, windowStart: Date) {
 
 export const dashboardRouter = createTRPCRouter({
   getMetrics: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.auth.userId
-
-    if (!userId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" })
-    }
-
     const now = new Date()
     const windowStart = getWindowStart(now)
-    const activeWorkspace = await accessControlService.resolveActiveWorkspace(userId)
+    const activeWorkspace = await accessControlService.resolveActiveWorkspace(
+      getRequiredUserId(ctx)
+    )
 
     const [submissionTotals, recentSubmissions, recentUsageEvents] =
       await Promise.all([
@@ -143,13 +142,9 @@ export const dashboardRouter = createTRPCRouter({
   }),
 
   getTrackables: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.auth.userId
-
-    if (!userId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" })
-    }
-
-    const activeWorkspace = await accessControlService.resolveActiveWorkspace(userId)
+    const activeWorkspace = await accessControlService.resolveActiveWorkspace(
+      getRequiredUserId(ctx)
+    )
 
     return db.query.trackableItems.findMany({
       where: eq(trackableItems.workspaceId, activeWorkspace.workspaceId),

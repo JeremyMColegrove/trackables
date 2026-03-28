@@ -1,15 +1,18 @@
 import "server-only"
 
 import { TRPCError } from "@trpc/server"
-import { and, eq, isNull } from "drizzle-orm"
+import { and, count, eq, isNull } from "drizzle-orm"
 
 import { db } from "@/db"
 import { users, workspaceMembers, workspaces } from "@/db/schema"
+import { isSubscriptionEnforcementEnabled } from "@/lib/subscription-enforcement"
+import { getFreeTierCreatedWorkspaceLimit } from "@/lib/subscription-plans"
 import {
   userActiveWorkspaceCache,
   userMembershipsCache,
 } from "@/server/redis/access-control-cache.repository"
 import { subscriptionService } from "@/server/subscriptions/subscription-service.singleton"
+import { assertCanCreateWorkspaceWithCount } from "@/server/workspace-creation-limit"
 import { applyWorkspaceCreationSideEffects } from "@/server/workspace-creation-side-effects"
 
 export function buildDefaultWorkspaceName(
@@ -36,6 +39,15 @@ export function generateWorkspaceSlug(name: string, userId: string) {
   return `${base}-${suffix}`
 }
 
+export async function getCreatedWorkspaceCount(userId: string) {
+  const [result] = await db
+    .select({ count: count() })
+    .from(workspaces)
+    .where(eq(workspaces.createdByUserId, userId))
+
+  return Number(result?.count) || 0
+}
+
 export async function createWorkspaceForUser(input: {
   userId: string
   name: string
@@ -56,6 +68,18 @@ export async function createWorkspaceForUser(input: {
   )
 
   const result = await db.transaction(async (tx) => {
+    if (isSubscriptionEnforcementEnabled()) {
+      const [createdWorkspaceResult] = await tx
+        .select({ count: count() })
+        .from(workspaces)
+        .where(eq(workspaces.createdByUserId, input.userId))
+
+      assertCanCreateWorkspaceWithCount(
+        Number(createdWorkspaceResult?.count) || 0,
+        getFreeTierCreatedWorkspaceLimit()
+      )
+    }
+
     const [workspace] = await tx
       .insert(workspaces)
       .values({

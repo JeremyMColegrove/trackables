@@ -39,13 +39,13 @@ export class AccessControlService {
     return role === "owner" || role === "admin" || role === "member" || role === "viewer"
   }
 
-  async assertProjectAccess(
-    projectId: string,
+  async assertTrackableAccess(
+    trackableId: string,
     userId: string,
     minimumRole: AccessRole
   ) {
-    const project = await db.query.trackableItems.findFirst({
-      where: eq(trackableItems.id, projectId),
+    const trackable = await db.query.trackableItems.findFirst({
+      where: eq(trackableItems.id, trackableId),
       columns: {
         id: true,
         kind: true,
@@ -53,7 +53,7 @@ export class AccessControlService {
       },
     })
 
-    if (!project) {
+    if (!trackable) {
       throw new TRPCError({
         code: "NOT_FOUND",
         message: "Trackable not found.",
@@ -61,7 +61,9 @@ export class AccessControlService {
     }
 
     const memberships = await userMembershipsCache.get(userId) || []
-    const workspaceMembership = memberships.find(m => m.workspaceId === project.workspaceId)
+    const workspaceMembership = memberships.find(
+      (membership) => membership.workspaceId === trackable.workspaceId
+    )
 
     if (workspaceMembership) {
       let hasWorkspaceAccess = false
@@ -72,13 +74,13 @@ export class AccessControlService {
       }
 
       if (hasWorkspaceAccess) {
-        return project
+        return trackable
       }
     }
 
     const grant = await db.query.trackableAccessGrants.findFirst({
       where: and(
-        eq(trackableAccessGrants.trackableId, projectId),
+        eq(trackableAccessGrants.trackableId, trackableId),
         eq(trackableAccessGrants.subjectUserId, userId),
         inArray(trackableAccessGrants.role, this.getAllowedRoles(minimumRole)),
         isNull(trackableAccessGrants.revokedAt)
@@ -95,15 +97,18 @@ export class AccessControlService {
       })
     }
 
-    return project
+    return trackable
   }
 
-  async getAccessibleProjectIds(userId: string, minimumRole: AccessRole = "view") {
+  async getAccessibleTrackableIds(
+    userId: string,
+    minimumRole: AccessRole = "view"
+  ) {
     const validWorkspaceRoles = minimumRole === "manage" 
       ? ["owner", "admin", "member"] as const
       : ["owner", "admin", "member", "viewer"] as const
 
-    const [workspaceProjectRows, grantedProjects] = await Promise.all([
+    const [workspaceTrackableRows, grantedTrackables] = await Promise.all([
       db
         .select({
           id: trackableItems.id,
@@ -132,8 +137,8 @@ export class AccessControlService {
 
     return Array.from(
       new Set([
-        ...workspaceProjectRows.map((project) => project.id),
-        ...grantedProjects.map((grant) => grant.trackableId),
+        ...workspaceTrackableRows.map((trackable) => trackable.id),
+        ...grantedTrackables.map((grant) => grant.trackableId),
       ])
     )
   }

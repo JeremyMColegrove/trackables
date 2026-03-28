@@ -1,78 +1,88 @@
-"use client";
+"use client"
 
-import { createContext, useContext } from "react";
+import { createContext, useContext } from "react"
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query"
 
-import type { SubscriptionTier } from "@/server/subscriptions/types";
-import { useTRPC } from "@/trpc/client";
+import type { SubscriptionTier } from "@/server/subscriptions/types"
+import { useTRPC } from "@/trpc/client"
 
-type WorkspaceRole = "owner" | "admin" | "member" | "viewer";
+type WorkspaceRole = "owner" | "admin" | "member" | "viewer"
 
 type WorkspaceSummary = {
-	id: string;
-	name: string;
-	slug: string;
-	role: WorkspaceRole;
-};
+  id: string
+  name: string
+  slug: string
+  role: WorkspaceRole
+}
 
 type ActiveWorkspace = WorkspaceSummary & {
-	tier: SubscriptionTier;
-};
+  tier: SubscriptionTier
+}
+
+type CreatedWorkspaceUsage = {
+  current: number
+  limit: number | null
+}
 
 type WorkspaceContextValue = {
-	hasAdminControls: boolean;
-	activeWorkspace: ActiveWorkspace | null;
-	workspaces: WorkspaceSummary[];
-	currentTier: SubscriptionTier;
-	canManageActiveWorkspace: boolean;
-	isLoading: boolean;
-	isFetching: boolean;
-	isReady: boolean;
-};
+  hasAdminControls: boolean
+  activeWorkspace: ActiveWorkspace | null
+  workspaces: WorkspaceSummary[]
+  createdWorkspaceUsage: CreatedWorkspaceUsage
+  currentTier: SubscriptionTier
+  canManageActiveWorkspace: boolean
+  isLoading: boolean
+  isFetching: boolean
+  isReady: boolean
+}
 
-const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
 
 export function WorkspaceContextProvider({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode
 }) {
-	const trpc = useTRPC();
-	const workspaceQuery = useQuery(
-		trpc.account.getWorkspaceContext.queryOptions(),
-	);
-	const activeWorkspace = workspaceQuery.data?.activeWorkspace ?? null;
-	const currentTier = activeWorkspace?.tier ?? "free";
-	const canManageActiveWorkspace =
-		activeWorkspace?.role === "owner" || activeWorkspace?.role === "admin";
+  const trpc = useTRPC()
+  const workspaceQuery = useQuery(
+    trpc.account.getWorkspaceContext.queryOptions()
+  )
+  const activeWorkspace = workspaceQuery.data?.activeWorkspace ?? null
+  const currentTier = activeWorkspace?.tier ?? "free"
+  const canManageActiveWorkspace =
+    activeWorkspace?.role === "owner" || activeWorkspace?.role === "admin"
 
-	return (
-		<WorkspaceContext.Provider
-			value={{
-				hasAdminControls: workspaceQuery.data?.hasAdminControls ?? false,
-				activeWorkspace,
-				workspaces: workspaceQuery.data?.workspaces ?? [],
-				currentTier,
-				canManageActiveWorkspace,
-				isLoading: workspaceQuery.isLoading,
-				isFetching: workspaceQuery.isFetching,
-				isReady: workspaceQuery.isFetched,
-			}}
-		>
-			{children}
-		</WorkspaceContext.Provider>
-	);
+  return (
+    <WorkspaceContext.Provider
+      value={{
+        hasAdminControls: workspaceQuery.data?.hasAdminControls ?? false,
+        activeWorkspace,
+        workspaces: workspaceQuery.data?.workspaces ?? [],
+        createdWorkspaceUsage: workspaceQuery.data?.createdWorkspaceUsage ?? {
+          current: 0,
+          limit: null,
+        },
+        currentTier,
+        canManageActiveWorkspace,
+        isLoading: workspaceQuery.isLoading,
+        isFetching: workspaceQuery.isFetching,
+        isReady: workspaceQuery.isFetched,
+      }}
+    >
+      {children}
+    </WorkspaceContext.Provider>
+  )
 }
 
 export function useWorkspaceContext() {
-	const context = useContext(WorkspaceContext);
+  const context = useContext(WorkspaceContext)
 
-	if (!context) {
-		throw new Error(
-			"useWorkspaceContext must be used within a WorkspaceContextProvider.",
-		);
-	}
+  if (!context) {
+    throw new Error(
+      "useWorkspaceContext must be used within a WorkspaceContextProvider."
+    )
+  }
 
-	return context;
+  return context
 }

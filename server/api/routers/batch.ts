@@ -1,7 +1,11 @@
 import { TRPCError } from "@trpc/server"
 import { z } from "zod"
 
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
+import {
+  createTRPCRouter,
+  getRequiredUserId,
+  protectedProcedure,
+} from "@/server/api/trpc"
 import { assertAdminControlsEnabled } from "@/server/admin-controls"
 import { ensureDefaultBatchJobsRegistered } from "@/server/batch/jobs"
 import { batchJobRegistry } from "@/server/batch/registry"
@@ -19,11 +23,7 @@ const batchJobKeyInput = z.object({
 
 export const batchRouter = createTRPCRouter({
   listJobs: protectedProcedure.query(async ({ ctx }) => {
-    if (!ctx.auth.userId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" })
-    }
-
-    await assertAdminControlsEnabled(ctx.auth.userId)
+    await assertAdminControlsEnabled(getRequiredUserId(ctx))
 
     const jobs = ensureDefaultBatchJobsRegistered()
 
@@ -59,11 +59,7 @@ export const batchRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }) => {
-      if (!ctx.auth.userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
-      await assertAdminControlsEnabled(ctx.auth.userId)
+      await assertAdminControlsEnabled(getRequiredUserId(ctx))
 
       ensureDefaultBatchJobsRegistered()
       const job = batchJobRegistry.getByKey(input.key)
@@ -95,11 +91,7 @@ export const batchRouter = createTRPCRouter({
   trigger: protectedProcedure
     .input(batchJobKeyInput)
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.auth.userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
-      await assertAdminControlsEnabled(ctx.auth.userId)
+      await assertAdminControlsEnabled(getRequiredUserId(ctx))
 
       ensureDefaultBatchJobsRegistered()
       const job = batchJobRegistry.getByKey(input.key)
@@ -121,11 +113,7 @@ export const batchRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.auth.userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
-      await assertAdminControlsEnabled(ctx.auth.userId)
+      await assertAdminControlsEnabled(getRequiredUserId(ctx))
 
       ensureDefaultBatchJobsRegistered()
       const job = batchJobRegistry.getByKey(input.key)

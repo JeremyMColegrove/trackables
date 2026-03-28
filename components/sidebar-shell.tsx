@@ -12,11 +12,13 @@ export function SidebarShell({
 	children,
 	href,
 	footer,
+	workspaceSelectorEyebrow,
 	...props
 }: {
 	children: React.ReactNode;
 	href: string;
 	footer?: React.ReactNode;
+	workspaceSelectorEyebrow?: React.ReactNode;
 } & React.ComponentProps<typeof Sidebar>) {
 	return (
 		<Sidebar collapsible="offcanvas" {...props}>
@@ -26,6 +28,11 @@ export function SidebarShell({
 			<SidebarContent>{children}</SidebarContent>
 			<SidebarFooter className="border-t px-3 py-3">
 				<div className="space-y-2">
+					{workspaceSelectorEyebrow ? (
+						<div className="px-2 text-[10px] font-medium tracking-wider text-sidebar-foreground/50 uppercase">
+							{workspaceSelectorEyebrow}
+						</div>
+					) : null}
 					<WorkspaceSwitcher triggerClassName="w-full justify-between" />
 					{footer}
 				</div>

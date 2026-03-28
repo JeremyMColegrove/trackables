@@ -1,5 +1,9 @@
 import type { SubscriptionTier, TierLimits } from "@/server/subscriptions/types"
 
+export interface FreeTierUserLimits {
+  maxCreatedWorkspaces: number | null
+}
+
 export interface SubscriptionPlanDefinition {
   tier: SubscriptionTier
   rank: number
@@ -10,8 +14,9 @@ export interface SubscriptionPlanDefinition {
 const FREE_LIMITS: TierLimits = {
   maxTrackableItems: 10,
   maxResponsesPerSurvey: 100,
-  maxWorkspaceMembers: 5,
-  maxApiLogsPerMinute: 30,
+  maxWorkspaceMembers: 10,
+  maxApiLogsPerMinute: 10,
+  maxApiPayloadBytes: 1024,
   logRetentionDays: 3,
 }
 
@@ -20,6 +25,7 @@ const PLUS_LIMITS: TierLimits = {
   maxResponsesPerSurvey: null,
   maxWorkspaceMembers: 100,
   maxApiLogsPerMinute: 60,
+  maxApiPayloadBytes: 32 * 1024,
   logRetentionDays: 90,
 }
 
@@ -28,7 +34,12 @@ const PRO_LIMITS: TierLimits = {
   maxResponsesPerSurvey: null,
   maxWorkspaceMembers: null,
   maxApiLogsPerMinute: 600,
+  maxApiPayloadBytes: null,
   logRetentionDays: null,
+}
+
+const FREE_TIER_USER_LIMITS: FreeTierUserLimits = {
+  maxCreatedWorkspaces: 3,
 }
 
 const SUBSCRIPTION_PLAN_LIST: SubscriptionPlanDefinition[] = [
@@ -82,6 +93,14 @@ export function getSubscriptionPlan(
 
 export function getLimitsForTier(tier: SubscriptionTier): TierLimits {
   return getSubscriptionPlan(tier).limits
+}
+
+export function getFreeTierUserLimits(): FreeTierUserLimits {
+  return FREE_TIER_USER_LIMITS
+}
+
+export function getFreeTierCreatedWorkspaceLimit(): number | null {
+  return getFreeTierUserLimits().maxCreatedWorkspaces
 }
 
 export function resolveTierFromVariantId(

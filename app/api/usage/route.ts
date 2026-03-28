@@ -1,5 +1,8 @@
 import { TRPCError } from "@trpc/server"
-import { isApiLogRateLimitMessage } from "@/lib/subscription-limit-messages"
+import {
+  isApiLogRateLimitMessage,
+  isApiPayloadSizeLimitMessage,
+} from "@/lib/subscription-limit-messages"
 import { recordApiUsage } from "@/server/usage-tracking/record-api-usage"
 
 function buildRequestMetadata(request: Request) {
@@ -25,10 +28,12 @@ function buildRequestMetadata(request: Request) {
 }
 
 async function parseUsagePayload(request: Request) {
+  const rawBody = await request.text()
+  const payloadSizeBytes = Buffer.byteLength(rawBody, "utf8")
   let body: unknown
 
   try {
-    body = await request.json()
+    body = JSON.parse(rawBody)
   } catch {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -43,12 +48,19 @@ async function parseUsagePayload(request: Request) {
     })
   }
 
-  return body as Record<string, unknown>
+  return {
+    payload: body as Record<string, unknown>,
+    payloadSizeBytes,
+  }
 }
 
 function getErrorStatus(error: TRPCError) {
+  if (isApiPayloadSizeLimitMessage(error.message)) {
+    return 413
+  }
+
   if (isApiLogRateLimitMessage(error.message)) {
-    return 503
+    return 429
   }
 
   return error.code === "BAD_REQUEST"
@@ -57,13 +69,13 @@ function getErrorStatus(error: TRPCError) {
       ? 401
       : error.code === "FORBIDDEN"
         ? 403
-      : error.code === "NOT_FOUND"
-        ? 404
-        : error.code === "CONFLICT"
-          ? 409
-          : error.code === "PRECONDITION_FAILED"
-            ? 412
-            : 500
+        : error.code === "NOT_FOUND"
+          ? 404
+          : error.code === "CONFLICT"
+            ? 409
+            : error.code === "PRECONDITION_FAILED"
+              ? 412
+              : 500
 }
 
 export async function POST(request: Request) {
@@ -77,11 +89,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const payload = await parseUsagePayload(request)
+    const { payload, payloadSizeBytes } = await parseUsagePayload(request)
 
     const usageEvent = await recordApiUsage({
       apiKey,
       payload,
+      payloadSizeBytes,
       requestId: request.headers.get("x-request-id"),
       metadata: buildRequestMetadata(request),
     })

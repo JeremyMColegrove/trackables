@@ -418,7 +418,10 @@
     "Increase API log retention for longer history and reporting": "قم بزيادة الاحتفاظ بسجل واجهة برمجة التطبيقات (API) للحصول على سجل أطول وإعداد التقارير",
     "Unlock higher-volume plans as your usage grows": "افتح الخطط ذات الحجم الأكبر مع نمو استخدامك",
     "Review, filter, and export the logs you've collected.": "قم بمراجعة وتصفية وتصدير السجلات التي جمعتها.",
-    "Open Connection": "افتح الاتصال"
+    "Open Connection": "افتح الاتصال",
+    "Workspace limit reached": "تم الوصول إلى الحد الأقصى لمساحة العمل",
+    "You have reached the maximum number of workspaces available on your account.": "لقد وصلت إلى الحد الأقصى لعدد مساحات العمل المتاحة في حسابك.",
+    "Current workspace": "مساحة العمل الحالية"
   },
   "de": {
     "Tracking for your team.": "Tracking für Ihr Team.",
@@ -839,7 +842,10 @@
     "Increase API log retention for longer history and reporting": "Erhöhen Sie die Aufbewahrung von API-Protokollen für einen längeren Verlauf und eine längere Berichterstellung",
     "Unlock higher-volume plans as your usage grows": "Schalten Sie Pläne mit höherem Volumen frei, wenn Ihre Nutzung steigt",
     "Review, filter, and export the logs you've collected.": "Überprüfen, filtern und exportieren Sie die von Ihnen gesammelten Protokolle.",
-    "Open Connection": "Verbindung öffnen"
+    "Open Connection": "Verbindung öffnen",
+    "Workspace limit reached": "Arbeitsbereichslimit erreicht",
+    "You have reached the maximum number of workspaces available on your account.": "Sie haben die maximale Anzahl an Arbeitsbereichen erreicht, die in Ihrem Konto verfügbar sind.",
+    "Current workspace": "Aktueller Arbeitsbereich"
   },
   "es": {
     "Tracking for your team.": "Seguimiento para tu equipo.",
@@ -1260,7 +1266,10 @@
     "Increase API log retention for longer history and reporting": "Aumente la retención de registros de API para obtener historiales e informes más largos",
     "Unlock higher-volume plans as your usage grows": "Desbloquee planes de mayor volumen a medida que crezca su uso",
     "Review, filter, and export the logs you've collected.": "Revise, filtre y exporte los registros que ha recopilado.",
-    "Open Connection": "Conexión abierta"
+    "Open Connection": "Conexión abierta",
+    "Workspace limit reached": "Se alcanzó el límite del espacio de trabajo",
+    "You have reached the maximum number of workspaces available on your account.": "Ha alcanzado el número máximo de espacios de trabajo disponibles en su cuenta.",
+    "Current workspace": "Espacio de trabajo actual"
   },
   "fr": {
     "Tracking for your team.": "Suivi de votre équipe.",
@@ -1681,7 +1690,10 @@
     "Increase API log retention for longer history and reporting": "Augmentez la conservation des journaux d'API pour un historique et des rapports plus longs",
     "Unlock higher-volume plans as your usage grows": "Débloquez des forfaits à volume plus élevé à mesure que votre utilisation augmente",
     "Review, filter, and export the logs you've collected.": "Examinez, filtrez et exportez les journaux que vous avez collectés.",
-    "Open Connection": "Connexion ouverte"
+    "Open Connection": "Connexion ouverte",
+    "Workspace limit reached": "Limite d'espace de travail atteinte",
+    "You have reached the maximum number of workspaces available on your account.": "Vous avez atteint le nombre maximum d'espaces de travail disponibles sur votre compte.",
+    "Current workspace": "Espace de travail actuel"
   },
   "hi": {
     "Tracking for your team.": "अपनी टीम के लिए ट्रैकिंग।",
@@ -2102,7 +2114,10 @@
     "Increase API log retention for longer history and reporting": "लंबे इतिहास और रिपोर्टिंग के लिए एपीआई लॉग प्रतिधारण बढ़ाएँ",
     "Unlock higher-volume plans as your usage grows": "जैसे-जैसे आपका उपयोग बढ़ता है, उच्च-मात्रा वाली योजनाओं को अनलॉक करें",
     "Review, filter, and export the logs you've collected.": "आपके द्वारा एकत्र किए गए लॉग की समीक्षा करें, फ़िल्टर करें और निर्यात करें।",
-    "Open Connection": "कनेक्शन खोलें"
+    "Open Connection": "कनेक्शन खोलें",
+    "Workspace limit reached": "कार्यस्थान की सीमा पूरी हो गई",
+    "You have reached the maximum number of workspaces available on your account.": "आप अपने खाते पर उपलब्ध कार्यस्थानों की अधिकतम संख्या तक पहुंच गए हैं।",
+    "Current workspace": "वर्तमान कार्यक्षेत्र"
   },
   "id": {
     "Tracking for your team.": "Pelacakan untuk tim Anda.",
@@ -2523,7 +2538,10 @@
     "Increase API log retention for longer history and reporting": "Tingkatkan retensi log API untuk riwayat dan pelaporan yang lebih panjang",
     "Unlock higher-volume plans as your usage grows": "Buka paket bervolume lebih tinggi seiring bertambahnya penggunaan Anda",
     "Review, filter, and export the logs you've collected.": "Tinjau, filter, dan ekspor log yang telah Anda kumpulkan.",
-    "Open Connection": "Buka Koneksi"
+    "Open Connection": "Buka Koneksi",
+    "Workspace limit reached": "Batas ruang kerja tercapai",
+    "You have reached the maximum number of workspaces available on your account.": "Anda telah mencapai jumlah maksimum ruang kerja yang tersedia di akun Anda.",
+    "Current workspace": "Ruang kerja saat ini"
   },
   "it": {
     "Tracking for your team.": "Monitoraggio per la tua squadra.",
@@ -2944,7 +2962,10 @@
     "Increase API log retention for longer history and reporting": "Aumenta la conservazione del log API per cronologia e report più lunghi",
     "Unlock higher-volume plans as your usage grows": "Sblocca piani di volume più elevato man mano che il tuo utilizzo aumenta",
     "Review, filter, and export the logs you've collected.": "Rivedi, filtra ed esporta i log che hai raccolto.",
-    "Open Connection": "Apri connessione"
+    "Open Connection": "Apri connessione",
+    "Workspace limit reached": "Limite dello spazio di lavoro raggiunto",
+    "You have reached the maximum number of workspaces available on your account.": "Hai raggiunto il numero massimo di spazi di lavoro disponibili sul tuo account.",
+    "Current workspace": "Area di lavoro corrente"
   },
   "ja": {
     "Tracking for your team.": "チームの追跡。",
@@ -3365,7 +3386,10 @@
     "Increase API log retention for longer history and reporting": "API ログの保持期間を増やして履歴とレポートを長くする",
     "Unlock higher-volume plans as your usage grows": "使用量の増加に応じて大容量プランのロックを解除します",
     "Review, filter, and export the logs you've collected.": "収集したログを確認、フィルターし、エクスポートします。",
-    "Open Connection": "オープン接続"
+    "Open Connection": "オープン接続",
+    "Workspace limit reached": "ワークスペースの制限に達しました",
+    "You have reached the maximum number of workspaces available on your account.": "アカウントで使用できるワークスペースの最大数に達しました。",
+    "Current workspace": "現在のワークスペース"
   },
   "ko": {
     "Tracking for your team.": "팀을 추적합니다.",
@@ -3786,7 +3810,10 @@
     "Increase API log retention for longer history and reporting": "더 긴 기록 및 보고를 위해 API 로그 보존을 늘립니다.",
     "Unlock higher-volume plans as your usage grows": "사용량 증가에 따라 대용량 요금제 잠금 해제",
     "Review, filter, and export the logs you've collected.": "수집한 로그를 검토하고 필터링하고 내보냅니다.",
-    "Open Connection": "연결 열기"
+    "Open Connection": "연결 열기",
+    "Workspace limit reached": "작업공간 한도에 도달했습니다.",
+    "You have reached the maximum number of workspaces available on your account.": "귀하의 계정에서 사용할 수 있는 최대 작업 공간 수에 도달했습니다.",
+    "Current workspace": "현재 작업공간"
   },
   "nl": {
     "Tracking for your team.": "Volgen voor uw team.",
@@ -4207,7 +4234,10 @@
     "Increase API log retention for longer history and reporting": "Verhoog de retentie van API-logboeken voor een langere geschiedenis en rapportage",
     "Unlock higher-volume plans as your usage grows": "Ontgrendel abonnementen met een hoger volume naarmate uw gebruik groeit",
     "Review, filter, and export the logs you've collected.": "Bekijk, filter en exporteer de logboeken die u heeft verzameld.",
-    "Open Connection": "Verbinding openen"
+    "Open Connection": "Verbinding openen",
+    "Workspace limit reached": "Werkruimtelimiet bereikt",
+    "You have reached the maximum number of workspaces available on your account.": "U heeft het maximale aantal beschikbare werkruimten in uw account bereikt.",
+    "Current workspace": "Huidige werkruimte"
   },
   "pl": {
     "Tracking for your team.": "Śledzenie dla Twojego zespołu.",
@@ -4628,7 +4658,10 @@
     "Increase API log retention for longer history and reporting": "Zwiększ przechowywanie dzienników API, aby uzyskać dłuższą historię i raportowanie",
     "Unlock higher-volume plans as your usage grows": "Odblokuj większe plany w miarę wzrostu wykorzystania",
     "Review, filter, and export the logs you've collected.": "Przeglądaj, filtruj i eksportuj zebrane dzienniki.",
-    "Open Connection": "Otwórz połączenie"
+    "Open Connection": "Otwórz połączenie",
+    "Workspace limit reached": "Osiągnięto limit obszaru roboczego",
+    "You have reached the maximum number of workspaces available on your account.": "Osiągnąłeś maksymalną liczbę obszarów roboczych dostępnych na Twoim koncie.",
+    "Current workspace": "Bieżący obszar roboczy"
   },
   "pt": {
     "Tracking for your team.": "Rastreamento para sua equipe.",
@@ -5049,7 +5082,10 @@
     "Increase API log retention for longer history and reporting": "Aumente a retenção de logs da API para obter históricos e relatórios mais longos",
     "Unlock higher-volume plans as your usage grows": "Desbloqueie planos de maior volume à medida que seu uso aumenta",
     "Review, filter, and export the logs you've collected.": "Revise, filtre e exporte os registros coletados.",
-    "Open Connection": "Conexão aberta"
+    "Open Connection": "Conexão aberta",
+    "Workspace limit reached": "Limite do espaço de trabalho atingido",
+    "You have reached the maximum number of workspaces available on your account.": "Você atingiu o número máximo de espaços de trabalho disponíveis em sua conta.",
+    "Current workspace": "Espaço de trabalho atual"
   },
   "ru": {
     "Tracking for your team.": "Отслеживание вашей команды.",
@@ -5470,7 +5506,10 @@
     "Increase API log retention for longer history and reporting": "Увеличьте срок хранения журналов API для более длительной истории и отчетности.",
     "Unlock higher-volume plans as your usage grows": "Разблокируйте планы большего объема по мере роста вашего использования.",
     "Review, filter, and export the logs you've collected.": "Просматривайте, фильтруйте и экспортируйте собранные вами журналы.",
-    "Open Connection": "Открытое соединение"
+    "Open Connection": "Открытое соединение",
+    "Workspace limit reached": "Достигнут предел рабочего пространства",
+    "You have reached the maximum number of workspaces available on your account.": "Вы достигли максимального количества рабочих мест, доступных в вашей учетной записи.",
+    "Current workspace": "Текущая рабочая область"
   },
   "tr": {
     "Tracking for your team.": "Ekibiniz için takip.",
@@ -5891,7 +5930,10 @@
     "Increase API log retention for longer history and reporting": "Daha uzun geçmiş ve raporlama için API günlüğü tutma oranını artırın",
     "Unlock higher-volume plans as your usage grows": "Kullanımınız arttıkça daha yüksek hacimli planların kilidini açın",
     "Review, filter, and export the logs you've collected.": "Topladığınız günlükleri inceleyin, filtreleyin ve dışa aktarın.",
-    "Open Connection": "Bağlantıyı Aç"
+    "Open Connection": "Bağlantıyı Aç",
+    "Workspace limit reached": "Çalışma alanı sınırına ulaşıldı",
+    "You have reached the maximum number of workspaces available on your account.": "Hesabınızda kullanılabilen maksimum çalışma alanı sayısına ulaştınız.",
+    "Current workspace": "Mevcut çalışma alanı"
   },
   "vi": {
     "Tracking for your team.": "Theo dõi cho nhóm của bạn.",
@@ -6312,7 +6354,10 @@
     "Increase API log retention for longer history and reporting": "Tăng khả năng lưu giữ nhật ký API để có lịch sử và báo cáo lâu hơn",
     "Unlock higher-volume plans as your usage grows": "Mở khóa các gói dung lượng cao hơn khi mức sử dụng của bạn tăng lên",
     "Review, filter, and export the logs you've collected.": "Xem lại, lọc và xuất nhật ký bạn đã thu thập.",
-    "Open Connection": "Mở kết nối"
+    "Open Connection": "Mở kết nối",
+    "Workspace limit reached": "Đã đạt đến giới hạn không gian làm việc",
+    "You have reached the maximum number of workspaces available on your account.": "Bạn đã đạt đến số lượng không gian làm việc tối đa có sẵn trên tài khoản của mình.",
+    "Current workspace": "Không gian làm việc hiện tại"
   },
   "zh-CN": {
     "Tracking for your team.": "跟踪您的团队。",
@@ -6733,6 +6778,9 @@
     "Increase API log retention for longer history and reporting": "增加 API 日志保留以获得更长的历史记录和报告",
     "Unlock higher-volume plans as your usage grows": "随着使用量的增加解锁更高容量的计划",
     "Review, filter, and export the logs you've collected.": "查看、过滤和导出您收集的日志。",
-    "Open Connection": "打开连接"
+    "Open Connection": "打开连接",
+    "Workspace limit reached": "已达到工作空间限制",
+    "You have reached the maximum number of workspaces available on your account.": "您已达到帐户上可用工作区的最大数量。",
+    "Current workspace": "当前工作空间"
   }
 }

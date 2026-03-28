@@ -21,6 +21,7 @@ import {
 import type { SubscriptionTier } from "@/server/subscriptions/types";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
+import { T } from "gt-next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
@@ -49,6 +50,9 @@ export function DashboardSidebar() {
 		<>
 			<SidebarShell
 				href="/dashboard"
+				workspaceSelectorEyebrow={
+					subscriptionsEnabled ? undefined : <T>Current workspace</T>
+				}
 				footer={
 					subscriptionsEnabled ? (
 						<WorkspaceTierSection onOpenDialog={handleOpenTierDialog} />
