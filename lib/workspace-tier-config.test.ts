@@ -19,8 +19,14 @@ test("workspace tier plans expose highlights derived from enforced limits", () =
   const plusPlan = getWorkspaceTierPlan("plus")
   const proPlan = getWorkspaceTierPlan("pro")
 
-  assert.deepEqual(freePlan.highlights, buildExpectedHighlights(freePlan.limits))
-  assert.deepEqual(plusPlan.highlights, buildExpectedHighlights(plusPlan.limits))
+  assert.deepEqual(
+    freePlan.highlights,
+    buildExpectedHighlights(freePlan.limits)
+  )
+  assert.deepEqual(
+    plusPlan.highlights,
+    buildExpectedHighlights(plusPlan.limits)
+  )
   assert.deepEqual(proPlan.highlights, buildExpectedHighlights(proPlan.limits))
 
   assert.equal(plusPlan.mostPopular, true)
@@ -59,6 +65,7 @@ function buildExpectedHighlights(limits: ReturnType<typeof getTierLimits>) {
       "response per survey",
       "responses per survey"
     ),
+    formatByteLimit(limits.maxApiPayloadBytes),
     formatUsageLimit(
       limits.maxApiLogsPerMinute,
       "API log per minute",
@@ -68,6 +75,18 @@ function buildExpectedHighlights(limits: ReturnType<typeof getTierLimits>) {
       ? "Unlimited API log retention"
       : `${limits.logRetentionDays}-day API log retention`,
   ]
+}
+
+function formatByteLimit(value: number | null) {
+  if (value === null) {
+    return "Unlimited API payload size"
+  }
+
+  if (value >= 1024) {
+    return `${Math.round(value / 1024)} KB API payload size`
+  }
+
+  return `${value} byte API payload size`
 }
 
 function formatUsageLimit(

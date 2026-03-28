@@ -54,3 +54,13 @@ const isAuthed = t.middleware(async ({ ctx, next }) => {
 export const createTRPCRouter = t.router
 export const publicProcedure = t.procedure.use(loggerMiddleware)
 export const protectedProcedure = t.procedure.use(loggerMiddleware).use(isAuthed)
+
+export function getRequiredUserId(ctx: TRPCContext) {
+  if (!ctx.auth.userId) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+    })
+  }
+
+  return ctx.auth.userId
+}

@@ -70,6 +70,7 @@ async function updateLocaleFile({ cache, locale, localePath, sourceTranslations 
   }
 
   console.log(`[${locale}] translating ${pendingList.length} new strings`);
+  logPendingStrings(locale, pendingList);
 
   const batches = buildBatches(pendingList);
   let translatedCount = 0;
@@ -131,6 +132,14 @@ function buildBatches(entries) {
   }
 
   return batches;
+}
+
+function logPendingStrings(locale, entries) {
+  console.log(`[${locale}] new strings found:`);
+
+  entries.forEach((entry, index) => {
+    console.log(`  ${index + 1}. ${JSON.stringify(entry.sourceText)}`);
+  });
 }
 
 async function translateBatch(locale, batch) {

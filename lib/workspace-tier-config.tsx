@@ -33,6 +33,18 @@ function formatUsageLimit(
     : `${value} ${value === 1 ? singularLabel : pluralLabel}`
 }
 
+function formatByteLimit(value: number | null) {
+  if (value === null) {
+    return "Unlimited API payload size"
+  }
+
+  if (value >= 1024) {
+    return `${Math.round(value / 1024)} KB API payload size`
+  }
+
+  return `${value} byte API payload size`
+}
+
 function buildTierHighlights(limits: TierLimits): string[] {
   return [
     formatUsageLimit(
@@ -50,6 +62,7 @@ function buildTierHighlights(limits: TierLimits): string[] {
       "response per survey",
       "responses per survey"
     ),
+    formatByteLimit(limits.maxApiPayloadBytes),
     formatUsageLimit(
       limits.maxApiLogsPerMinute,
       "API log per minute",

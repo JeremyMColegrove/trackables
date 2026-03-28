@@ -1,12 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { T, useGT } from "gt-next";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -25,8 +18,15 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { isCreatedWorkspaceLimitMessage } from "@/lib/subscription-limit-messages";
 import { useTRPC } from "@/trpc/client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { T, useGT } from "gt-next";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const createWorkspaceSchema = z.object({
 	name: z
@@ -39,6 +39,9 @@ const createWorkspaceSchema = z.object({
 type CreateWorkspaceDialogProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	currentWorkspaceCount: number;
+	maxCreatedWorkspaces: number | null;
+	onRequireLimitDialog: () => void;
 };
 
 type CreateWorkspaceValues = z.infer<typeof createWorkspaceSchema>;
@@ -46,6 +49,9 @@ type CreateWorkspaceValues = z.infer<typeof createWorkspaceSchema>;
 export function CreateWorkspaceDialog({
 	open,
 	onOpenChange,
+	currentWorkspaceCount,
+	maxCreatedWorkspaces,
+	onRequireLimitDialog,
 }: CreateWorkspaceDialogProps) {
 	const gt = useGT();
 	const router = useRouter();
@@ -87,6 +93,12 @@ export function CreateWorkspaceDialog({
 				router.replace("/dashboard");
 			},
 			onError: (error) => {
+				if (isCreatedWorkspaceLimitMessage(error.message)) {
+					onOpenChange(false);
+					onRequireLimitDialog();
+					return;
+				}
+
 				setSubmitError(error.message);
 			},
 		}),
@@ -107,6 +119,9 @@ export function CreateWorkspaceDialog({
 	}
 
 	const isSubmitting = form.formState.isSubmitting || createWorkspace.isPending;
+	const hasReachedWorkspaceLimit =
+		maxCreatedWorkspaces !== null &&
+		currentWorkspaceCount >= maxCreatedWorkspaces;
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
@@ -151,7 +166,10 @@ export function CreateWorkspaceDialog({
 							>
 								<T>Cancel</T>
 							</Button>
-							<Button type="submit" disabled={isSubmitting}>
+							<Button
+								type="submit"
+								disabled={isSubmitting || hasReachedWorkspaceLimit}
+							>
 								{createWorkspace.isPending ? (
 									<T>Creating...</T>
 								) : (

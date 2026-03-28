@@ -5,12 +5,12 @@ import { db } from "@/db"
 import { trackableFormFields, trackableForms, trackableItems } from "@/db/schema"
 import { normalizeEditableForm, type EditableTrackableForm } from "@/lib/project-form-builder"
 import { accessControlService } from "@/server/services/access-control.service"
-import { assertTrackableKind } from "@/server/services/project.service"
 import { sharedFormCache } from "@/server/redis/shared-form-cache.repository"
+import { assertTrackableKind } from "@/server/services/trackable-kind"
 
 export class FormService {
   async createForm(trackableId: string, userId: string) {
-    const trackable = await accessControlService.assertProjectAccess(
+    const trackable = await accessControlService.assertTrackableAccess(
       trackableId,
       userId,
       "manage"
@@ -89,7 +89,7 @@ export class FormService {
   }
 
   async saveForm(trackableId: string, userId: string, rawFormInput: EditableTrackableForm) {
-    const trackable = await accessControlService.assertProjectAccess(
+    const trackable = await accessControlService.assertTrackableAccess(
       trackableId,
       userId,
       "manage"

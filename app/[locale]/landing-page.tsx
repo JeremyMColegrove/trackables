@@ -14,6 +14,9 @@ import { LandingAuthActions } from "@/components/auth/landing-auth-actions";
 import { LandingDashboardPreview } from "@/components/landing-dashboard-preview";
 import { siteConfig } from "@/lib/site-config";
 
+const landingCardClassName =
+	"translate-y-0 rounded-2xl border border-border/80 bg-card shadow-sm transition-transform transition-shadow transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-md hover:border-border";
+
 export function LandingPage() {
 	return (
 		<main className="flex min-h-svh flex-col bg-background selection:bg-primary/10">
@@ -105,7 +108,7 @@ export function LandingPage() {
 						].map((item) => (
 							<div
 								key={item.key}
-								className="group relative rounded-2xl border bg-card p-8 shadow-sm transition-all"
+								className={`${landingCardClassName} group relative p-8`}
 							>
 								<div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
 									{item.icon}
@@ -240,7 +243,7 @@ export function LandingPage() {
 						].map((item, i) => (
 							<div
 								key={item.key}
-								className="rounded-xl border bg-card p-6 shadow-sm transition hover:shadow-md"
+								className={`${landingCardClassName} rounded-xl p-6`}
 							>
 								<div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
 									{item.icon}

@@ -4,16 +4,16 @@ import { z } from "zod"
 
 import { db } from "@/db"
 import { workspaces } from "@/db/schema"
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
+import {
+  createTRPCRouter,
+  getRequiredUserId,
+  protectedProcedure,
+} from "@/server/api/trpc"
 import { accessControlService } from "@/server/services/access-control.service"
 
 export const workspaceRouter = createTRPCRouter({
   getSettings: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.auth.userId
-
-    if (!userId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" })
-    }
+    const userId = getRequiredUserId(ctx)
 
     const membership = await accessControlService.resolveActiveWorkspace(userId)
     
@@ -45,11 +45,7 @@ export const workspaceRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
+      const userId = getRequiredUserId(ctx)
 
       const membership = await accessControlService.resolveActiveWorkspace(userId)
       
@@ -76,11 +72,7 @@ export const workspaceRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
+      const userId = getRequiredUserId(ctx)
 
       const membership = await accessControlService.assertWorkspaceAccess(
         userId,

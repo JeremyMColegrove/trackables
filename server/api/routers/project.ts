@@ -1,4 +1,3 @@
-import { TRPCError } from "@trpc/server"
 import { z } from "zod"
 
 import {
@@ -13,15 +12,17 @@ import {
 import { publicFormSubmissionSchema } from "@/lib/trackable-form-submission"
 import {
   createTRPCRouter,
+  getRequiredUserId,
   protectedProcedure,
   publicProcedure,
 } from "@/server/api/trpc"
 import { accessControlService } from "@/server/services/access-control.service"
-import { projectService } from "@/server/services/project.service"
 import { formService } from "@/server/services/form.service"
-import { formSubmissionService } from "@/server/services/form-submission.service"
 import { shareLinkService } from "@/server/services/share-link.service"
 import { apiKeyService } from "@/server/services/api-key.service"
+import { sharedFormRuntimeService } from "@/server/services/shared-form-runtime.service"
+import { trackableMutationService } from "@/server/services/trackable-mutation.service"
+import { trackableQueryService } from "@/server/services/trackable-query.service"
 import {
   getTrackableUsageEvents,
   getTrackableUsageSourceSnapshot,
@@ -41,27 +42,15 @@ export const trackablesRouter = createTRPCRouter({
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
-      return projectService.getById(input.id, userId)
+      return trackableQueryService.getById(input.id, getRequiredUserId(ctx))
     }),
 
   getUsageEventTable: protectedProcedure
     .input(usageEventSearchInputSchema)
     .query(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
-      await accessControlService.assertProjectAccess(
+      await accessControlService.assertTrackableAccess(
         input.trackableId,
-        userId,
+        getRequiredUserId(ctx),
         "view"
       )
 
@@ -79,15 +68,9 @@ export const trackablesRouter = createTRPCRouter({
     )
     .output(usageEventFreshnessSchema)
     .query(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
-      await accessControlService.assertProjectAccess(
+      await accessControlService.assertTrackableAccess(
         input.trackableId,
-        userId,
+        getRequiredUserId(ctx),
         "view"
       )
 
@@ -109,7 +92,7 @@ export const trackablesRouter = createTRPCRouter({
   getSharedForm: publicProcedure
     .input(z.object({ token: z.string().trim().min(1) }))
     .query(async ({ ctx, input }) => {
-      const { shareLink: _, ...result } = await shareLinkService.getSharedForm(
+      const { shareLink: _, ...result } = await sharedFormRuntimeService.loadForViewer(
         input.token,
         ctx.auth.userId ?? null
       )
@@ -119,7 +102,7 @@ export const trackablesRouter = createTRPCRouter({
   submitSharedForm: publicProcedure
     .input(publicFormSubmissionSchema)
     .mutation(async ({ ctx, input }) => {
-      return formSubmissionService.submitSharedForm({
+      return sharedFormRuntimeService.submit({
         token: input.token,
         answers: input.answers,
         responderEmail: input.responderEmail,
@@ -131,25 +114,17 @@ export const trackablesRouter = createTRPCRouter({
   createForm: protectedProcedure
     .input(createTrackableFormSchema)
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
-      return formService.createForm(input.trackableId, userId)
+      return formService.createForm(input.trackableId, getRequiredUserId(ctx))
     }),
 
   saveForm: protectedProcedure
     .input(saveTrackableFormSchema)
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
-      return formService.saveForm(input.trackableId, userId, input.form)
+      return formService.saveForm(
+        input.trackableId,
+        getRequiredUserId(ctx),
+        input.form
+      )
     }),
 
   create: protectedProcedure
@@ -161,17 +136,11 @@ export const trackablesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
-      return projectService.create({
+      return trackableMutationService.create({
         kind: input.kind,
         name: input.name,
         description: input.description,
-        userId,
+        userId: getRequiredUserId(ctx),
       })
     }),
 
@@ -186,15 +155,9 @@ export const trackablesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
-      return projectService.updateSettings({
+      return trackableMutationService.updateSettings({
         trackableId: input.trackableId,
-        userId,
+        userId: getRequiredUserId(ctx),
         name: input.name,
         description: input.description,
         allowAnonymousSubmissions: input.allowAnonymousSubmissions,
@@ -211,15 +174,9 @@ export const trackablesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
       return shareLinkService.upsertEmailGrant({
         trackableId: input.trackableId,
-        userId,
+        userId: getRequiredUserId(ctx),
         email: input.email,
         role: input.role,
       })
@@ -233,15 +190,9 @@ export const trackablesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
       return shareLinkService.revokeAccessGrant({
         trackableId: input.trackableId,
-        userId,
+        userId: getRequiredUserId(ctx),
         grantId: input.grantId,
       })
     }),
@@ -254,15 +205,9 @@ export const trackablesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
       return shareLinkService.createShareLink({
         trackableId: input.trackableId,
-        userId,
+        userId: getRequiredUserId(ctx),
         role: input.role,
       })
     }),
@@ -277,15 +222,9 @@ export const trackablesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
       return shareLinkService.updateShareLink({
         trackableId: input.trackableId,
-        userId,
+        userId: getRequiredUserId(ctx),
         linkId: input.linkId,
         role: input.role,
         isActive: input.isActive,
@@ -301,15 +240,9 @@ export const trackablesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
       return apiKeyService.createApiKey({
         trackableId: input.trackableId,
-        userId,
+        userId: getRequiredUserId(ctx),
         name: input.name,
         expirationPreset: input.expirationPreset,
       })
@@ -323,15 +256,9 @@ export const trackablesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
       return apiKeyService.revokeApiKey({
         trackableId: input.trackableId,
-        userId,
+        userId: getRequiredUserId(ctx),
         apiKeyId: input.apiKeyId,
       })
     }),

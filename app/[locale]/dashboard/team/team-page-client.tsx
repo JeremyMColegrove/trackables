@@ -18,8 +18,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { LimitUsageBadge } from "@/components/ui/limit-usage-badge";
 import {
 	Select,
 	SelectContent,
@@ -28,8 +27,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatUserTimestamp } from "@/lib/date-time";
-import { isWorkspaceMemberLimitMessage } from "@/lib/subscription-limit-messages";
 import { getTierLimits } from "@/lib/workspace-tier-config";
 import type { SubscriptionTier } from "@/server/subscriptions/types";
 import { useTRPC } from "@/trpc/client";
@@ -37,73 +34,18 @@ import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { T, useGT } from "gt-next";
-import throttle from "lodash/throttle";
-import { Check, LoaderCircle, Search, UserPlus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-
-type TeamMemberRow = {
-	rowType: "member";
-	id: string;
-	displayName: string | null;
-	primaryEmail: string | null;
-	imageUrl: string | null;
-	role: "owner" | "admin" | "member" | "viewer";
-	roleLabel: string;
-	isOwner: boolean;
-	addedAt: string | null;
-};
-
-type PendingInvitationRow = {
-	rowType: "invitation";
-	id: string;
-	invitedDisplayName: string;
-	invitedEmail: string | null;
-	imageUrl: string | null;
-	invitedByDisplayName: string;
-	invitedByEmail: string;
-	role: "owner" | "admin" | "member" | "viewer";
-	roleLabel: string;
-	status: "pending" | "accepted" | "rejected" | "revoked";
-	createdAt: string;
-};
-
-type TeamAccessRow = TeamMemberRow | PendingInvitationRow;
-
-type MyInvitationRow = {
-	id: string;
-	workspaceId: string;
-	workspaceName: string;
-	workspaceSlug: string;
-	invitedByDisplayName: string;
-	invitedByEmail: string;
-	role: "owner" | "admin" | "member" | "viewer";
-	roleLabel: string;
-	createdAt: string;
-};
-
-const MEMBER_SEARCH_MIN_LENGTH = 2;
-const MEMBER_SEARCH_THROTTLE_MS = 300;
-
-function getInitials(value: string) {
-	return value
-		.split(" ")
-		.map((part) => part[0])
-		.join("")
-		.slice(0, 2)
-		.toUpperCase();
-}
-
-function getDisplayName(member: {
-	displayName: string | null;
-	primaryEmail: string | null;
-}) {
-	return member.displayName ?? member.primaryEmail ?? "Unknown user";
-}
-
-function formatDateLabel(value: string) {
-	return formatUserTimestamp(value);
-}
+import { InviteMemberDialog } from "./invite-member-dialog";
+import {
+	formatDateLabel,
+	getDisplayName,
+	getInitials,
+	type MyInvitationRow,
+	type PendingInvitationRow,
+	type TeamAccessRow,
+	type TeamMemberRow,
+} from "./team-page-shared";
 
 function WorkspaceAccessDescription({ role }: { role: TeamAccessRow["role"] }) {
 	if (role === "viewer") {
@@ -136,265 +78,6 @@ function TeamPageSkeleton() {
 				<Skeleton className="h-112 rounded-xl" />
 			</div>
 		</main>
-	);
-}
-
-function InviteMemberDialog({
-	hasReachedMemberLimit,
-	isCheckingMemberLimit,
-	onRequireUpgrade,
-}: {
-	hasReachedMemberLimit: boolean;
-	isCheckingMemberLimit: boolean;
-	onRequireUpgrade: () => void;
-}) {
-	const gt = useGT();
-	const [open, setOpen] = useState(false);
-	const [search, setSearch] = useState("");
-	const [throttledSearch, setThrottledSearch] = useState("");
-	const [selectedRole, setSelectedRole] = useState<
-		"admin" | "member" | "viewer"
-	>("viewer");
-	const trpc = useTRPC();
-	const queryClient = useQueryClient();
-
-	const normalizedInput = search.trim();
-	const hasEnoughCharacters =
-		normalizedInput.length >= MEMBER_SEARCH_MIN_LENGTH;
-	const shouldSearch =
-		open &&
-		hasEnoughCharacters &&
-		throttledSearch.length >= MEMBER_SEARCH_MIN_LENGTH;
-
-	const updateThrottledSearch = useMemo(
-		() =>
-			throttle(
-				(value: string) => {
-					setThrottledSearch(value.trim());
-				},
-				MEMBER_SEARCH_THROTTLE_MS,
-				{
-					leading: false,
-					trailing: true,
-				},
-			),
-		[],
-	);
-
-	useEffect(() => {
-		if (!open) {
-			updateThrottledSearch.cancel();
-			return;
-		}
-
-		if (!hasEnoughCharacters) {
-			updateThrottledSearch.cancel();
-			return;
-		}
-
-		updateThrottledSearch(search);
-
-		return () => {
-			updateThrottledSearch.cancel();
-		};
-	}, [hasEnoughCharacters, open, search, updateThrottledSearch]);
-
-	const searchQuery = useQuery(
-		trpc.team.searchUsers.queryOptions(
-			{ query: throttledSearch },
-			{
-				enabled: shouldSearch,
-				placeholderData: (previousData) => previousData,
-			},
-		),
-	);
-
-	const inviteMember = useMutation(
-		trpc.team.inviteMember.mutationOptions({
-			onSuccess: async () => {
-				setOpen(false);
-				setSearch("");
-
-				await queryClient.invalidateQueries({
-					queryKey: trpc.team.listPendingInvitations.queryKey(),
-				});
-
-				toast.success(gt("Invitation sent."));
-			},
-			onError: (err) => {
-				if (isWorkspaceMemberLimitMessage(err.message)) {
-					setOpen(false);
-					onRequireUpgrade();
-					return;
-				}
-
-				toast.error(err.message);
-			},
-		}),
-	);
-
-	const results = searchQuery.data ?? [];
-	const isWaitingForThrottle =
-		hasEnoughCharacters && normalizedInput !== throttledSearch;
-	const hasSearched = hasEnoughCharacters && Boolean(throttledSearch);
-	const isSearching =
-		hasEnoughCharacters && (isWaitingForThrottle || searchQuery.isFetching);
-	const searchStatusLabel = !hasSearched
-		? null
-		: isSearching
-			? gt("Loading")
-			: gt("Up to date");
-
-	function handleInviteTriggerClick() {
-		if (isCheckingMemberLimit) {
-			return;
-		}
-
-		if (hasReachedMemberLimit) {
-			onRequireUpgrade();
-			return;
-		}
-
-		setOpen(true);
-	}
-
-	return (
-		<Dialog
-			open={open}
-			onOpenChange={(nextOpen) => {
-				setOpen(nextOpen);
-
-				if (!nextOpen) {
-					setSearch("");
-					setThrottledSearch("");
-					updateThrottledSearch.cancel();
-				}
-			}}
-		>
-			<Button
-				type="button"
-				variant="default"
-				size="lg"
-				onClick={handleInviteTriggerClick}
-				disabled={isCheckingMemberLimit}
-			>
-				<UserPlus data-icon="inline-start" />
-				<T>Invite member</T>
-			</Button>
-			<DialogContent className="gap-3 pb-0 sm:max-w-xl">
-				<DialogHeader>
-					<DialogTitle>
-						<T>Invite member</T>
-					</DialogTitle>
-					<DialogDescription>
-						<T>
-							Search for an existing user by name or email to invite them to
-							this workspace.
-						</T>
-					</DialogDescription>
-				</DialogHeader>
-
-				<div className="flex flex-col gap-4">
-					<div className="flex flex-col gap-2">
-						<Label className="text-sm font-medium">
-							<T>Role for invited members</T>
-						</Label>
-						<Select
-							value={selectedRole}
-							onValueChange={(value) =>
-								setSelectedRole(value as "admin" | "member" | "viewer")
-							}
-						>
-							<SelectTrigger>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="admin">
-									Admin (Manage Workspace & Trackables)
-								</SelectItem>
-								<SelectItem value="member">Member (Edit Trackables)</SelectItem>
-								<SelectItem value="viewer">Viewer (View Only)</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className="relative">
-						<Search className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground" />
-						<Input
-							value={search}
-							onChange={(event) => setSearch(event.target.value)}
-							placeholder={gt("Search by name or email")}
-							className="pl-9 pr-28"
-						/>
-						<div className="pointer-events-none absolute top-1/2 right-3 flex min-w-20 -translate-y-1/2 items-center justify-end gap-1.5 text-xs text-muted-foreground">
-							{searchStatusLabel ? (
-								<>
-									{isSearching ? (
-										<LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-									) : (
-										<Check className="h-3.5 w-3.5" />
-									)}
-									<span>{searchStatusLabel}</span>
-								</>
-							) : null}
-						</div>
-					</div>
-
-					<div className="flex max-h-80 flex-col gap-2 pb-4 overflow-y-auto">
-						{!hasEnoughCharacters ? (
-							<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-								<T>Type at least 2 characters to search for users.</T>
-							</div>
-						) : results.length === 0 ? (
-							<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-								<T>No users matched that search.</T>
-							</div>
-						) : (
-							results.map((user) => {
-								const label = getDisplayName(user);
-
-								return (
-									<div
-										key={user.id}
-										className="flex items-center justify-between gap-3 rounded-lg border p-3"
-									>
-										<div className="flex min-w-0 items-center gap-3">
-											<Avatar>
-												<AvatarImage
-													src={user.imageUrl ?? undefined}
-													alt={label}
-												/>
-												<AvatarFallback>{getInitials(label)}</AvatarFallback>
-											</Avatar>
-											<div className="min-w-0">
-												<p className="truncate font-medium">{label}</p>
-												<p className="truncate text-sm text-muted-foreground">
-													{user.primaryEmail}
-												</p>
-											</div>
-										</div>
-
-										<Button
-											type="button"
-											size="sm"
-											onClick={() =>
-												inviteMember.mutate({
-													invitedUserId: user.id,
-													role: selectedRole,
-												})
-											}
-											disabled={inviteMember.isPending}
-										>
-											<T>Invite</T>
-										</Button>
-									</div>
-								);
-							})
-						)}
-					</div>
-				</div>
-			</DialogContent>
-		</Dialog>
 	);
 }
 
@@ -813,13 +496,23 @@ function TeamPageContent() {
 				</section>
 
 				<section className="rounded-xl border bg-card p-4 sm:p-5">
-					<div className="flex flex-col gap-1">
-						<h2 className="text-base font-semibold">
-							{gt("Workspace access")}
-						</h2>
-						<p className="text-sm text-muted-foreground">
-							{gt("Active members and pending invitations for this workspace.")}
-						</p>
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+						<div className="flex flex-col gap-1">
+							<div className="flex items-center">
+								<h2 className="text-base font-semibold">
+									{gt("Workspace access")}
+								</h2>
+								<LimitUsageBadge
+									current={members.length}
+									limit={maxWorkspaceMembers ?? 1}
+								/>
+							</div>
+							<p className="text-sm text-muted-foreground">
+								{gt(
+									"Active members and pending invitations for this workspace.",
+								)}
+							</p>
+						</div>
 					</div>
 
 					<div className="mt-4">

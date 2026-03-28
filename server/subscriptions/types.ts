@@ -15,6 +15,8 @@ export interface TierLimits {
   maxWorkspaceMembers: number | null
   /** Maximum API log events per minute per workspace. `null` = unlimited. */
   maxApiLogsPerMinute: number | null
+  /** Maximum API log payload size in bytes. `null` = unlimited. */
+  maxApiPayloadBytes: number | null
   /** Maximum log retention in days. `null` = forever. */
   logRetentionDays: number | null
 }

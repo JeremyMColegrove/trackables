@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server"
 import { and, count, eq, isNull } from "drizzle-orm"
 
 import { db } from "@/db"
+import type { UsageEventPayload } from "@/db/schema/types"
 import {
   trackableFormSubmissions,
   trackableItems,
@@ -11,13 +12,15 @@ import {
 } from "@/db/schema"
 import {
   getApiLogRateLimitMessage,
+  getApiPayloadSizeLimitMessage,
   getSurveyResponseLimitMessage,
   getTrackableLimitMessage,
   getWorkspaceMemberLimitMessage,
 } from "@/lib/subscription-limit-messages"
 import { isSubscriptionEnforcementEnabled } from "@/lib/subscription-enforcement"
-import { subscriptionService } from "@/server/subscriptions/subscription-service.singleton"
 import { CounterCacheRepository } from "@/server/redis/counter-cache.repository"
+import { getUsagePayloadSizeBytes } from "@/server/subscriptions/quota-limit-utils"
+import { subscriptionService } from "@/server/subscriptions/subscription-service.singleton"
 
 const apiLogsRateLimitCache = new CounterCacheRepository("api-logs-rate-limit")
 
@@ -122,6 +125,29 @@ export class QuotaService {
     }
   }
 
+  async assertApiPayloadSize(
+    workspaceId: string,
+    payload: UsageEventPayload,
+    payloadSizeBytes = getUsagePayloadSizeBytes(payload)
+  ) {
+    if (!isSubscriptionEnforcementEnabled()) {
+      return
+    }
+
+    const limits = await subscriptionService.getWorkspaceLimits(workspaceId)
+
+    if (limits.maxApiPayloadBytes === null) {
+      return
+    }
+
+    if (payloadSizeBytes > limits.maxApiPayloadBytes) {
+      throw new TRPCError({
+        code: "PAYLOAD_TOO_LARGE",
+        message: getApiPayloadSizeLimitMessage(limits.maxApiPayloadBytes),
+      })
+    }
+  }
+
   async assertCanLogApiUsage(workspaceId: string) {
     if (!isSubscriptionEnforcementEnabled()) {
       return
@@ -139,7 +165,7 @@ export class QuotaService {
 
     if (count > limits.maxApiLogsPerMinute) {
       throw new TRPCError({
-        code: "FORBIDDEN",
+        code: "TOO_MANY_REQUESTS",
         message: getApiLogRateLimitMessage(limits.maxApiLogsPerMinute),
       })
     }

@@ -4,7 +4,11 @@ import { z } from "zod"
 
 import { db } from "@/db"
 import { users, workspaceInvitations, workspaceMembers } from "@/db/schema"
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
+import {
+  createTRPCRouter,
+  getRequiredUserId,
+  protectedProcedure,
+} from "@/server/api/trpc"
 import { accessControlService } from "@/server/services/access-control.service"
 import { workspaceInvitationService } from "@/server/services/workspace-invitation.service"
 import { userMembershipsCache } from "@/server/redis/access-control-cache.repository"
@@ -20,11 +24,7 @@ const inviteMemberSchema = z.object({
 
 export const teamRouter = createTRPCRouter({
   getMemberCount: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.auth.userId
-
-    if (!userId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" })
-    }
+    const userId = getRequiredUserId(ctx)
 
     const membership = await accessControlService.resolveActiveWorkspace(userId)
 
@@ -40,11 +40,7 @@ export const teamRouter = createTRPCRouter({
   }),
 
   listMembers: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.auth.userId
-
-    if (!userId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" })
-    }
+    const userId = getRequiredUserId(ctx)
 
     const membership = await accessControlService.resolveActiveWorkspace(userId)
     const members = await db.query.workspaceMembers.findMany({
@@ -85,11 +81,7 @@ export const teamRouter = createTRPCRouter({
   }),
 
   listPendingInvitations: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.auth.userId
-
-    if (!userId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" })
-    }
+    const userId = getRequiredUserId(ctx)
 
     const membership = await accessControlService.resolveActiveWorkspace(userId)
 
@@ -100,23 +92,15 @@ export const teamRouter = createTRPCRouter({
   }),
 
   listMyPendingInvitations: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.auth.userId
-
-    if (!userId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" })
-    }
-
-    return workspaceInvitationService.listPendingInvitationsForUser(userId)
+    return workspaceInvitationService.listPendingInvitationsForUser(
+      getRequiredUserId(ctx)
+    )
   }),
 
   searchUsers: protectedProcedure
     .input(userSearchSchema)
     .query(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
+      const userId = getRequiredUserId(ctx)
 
       const membership =
         await accessControlService.resolveActiveWorkspace(userId)
@@ -179,11 +163,7 @@ export const teamRouter = createTRPCRouter({
   inviteMember: protectedProcedure
     .input(inviteMemberSchema)
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
+      const userId = getRequiredUserId(ctx)
 
       const activeMembership =
         await accessControlService.resolveActiveWorkspace(userId)
@@ -205,15 +185,9 @@ export const teamRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
       return workspaceInvitationService.acceptInvitation({
         invitationId: input.invitationId,
-        userId,
+        userId: getRequiredUserId(ctx),
       })
     }),
 
@@ -224,15 +198,9 @@ export const teamRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
       return workspaceInvitationService.rejectInvitation({
         invitationId: input.invitationId,
-        userId,
+        userId: getRequiredUserId(ctx),
       })
     }),
 
@@ -243,15 +211,9 @@ export const teamRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
-
       return workspaceInvitationService.revokeInvitation({
         invitationId: input.invitationId,
-        userId,
+        userId: getRequiredUserId(ctx),
       })
     }),
 
@@ -263,11 +225,7 @@ export const teamRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
+      const userId = getRequiredUserId(ctx)
 
       const activeMembership =
         await accessControlService.resolveActiveWorkspace(userId)
@@ -320,11 +278,7 @@ export const teamRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
+      const userId = getRequiredUserId(ctx)
 
       const activeMembership =
         await accessControlService.resolveActiveWorkspace(userId)

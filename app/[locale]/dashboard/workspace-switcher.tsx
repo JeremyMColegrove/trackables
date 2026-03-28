@@ -2,6 +2,8 @@
 
 import { CreateWorkspaceDialog } from "@/app/[locale]/dashboard/CreateWorkspaceDialog";
 import { useWorkspaceContext } from "@/app/[locale]/dashboard/workspace-context-provider";
+import { WorkspaceCreationLimitDialog } from "@/app/[locale]/dashboard/workspace-creation-limit-dialog";
+import { LimitUsageBadge } from "@/components/ui/limit-usage-badge";
 import {
 	Select,
 	SelectContent,
@@ -33,11 +35,20 @@ export function WorkspaceSwitcher({
 	const router = useRouter();
 	const { setOpenMobile } = useSidebar();
 	const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = useState(false);
+	const [isWorkspaceLimitDialogOpen, setIsWorkspaceLimitDialogOpen] =
+		useState(false);
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
-	const { activeWorkspace, canManageActiveWorkspace, workspaces } =
-		useWorkspaceContext();
+	const {
+		activeWorkspace,
+		canManageActiveWorkspace,
+		createdWorkspaceUsage,
+		workspaces,
+	} = useWorkspaceContext();
+	const hasReachedWorkspaceCreationLimit =
+		createdWorkspaceUsage.limit !== null &&
+		createdWorkspaceUsage.current >= createdWorkspaceUsage.limit;
 
 	async function invalidateWorkspaceQueries() {
 		await Promise.all([
@@ -67,6 +78,11 @@ export function WorkspaceSwitcher({
 
 	function handleWorkspaceChange(workspaceId: string) {
 		if (workspaceId === CREATE_WORKSPACE_VALUE) {
+			if (hasReachedWorkspaceCreationLimit) {
+				setIsWorkspaceLimitDialogOpen(true);
+				return;
+			}
+
 			setIsCreateWorkspaceOpen(true);
 			return;
 		}
@@ -91,10 +107,7 @@ export function WorkspaceSwitcher({
 
 	return (
 		<>
-			<Select
-				value={activeWorkspace?.id}
-				onValueChange={handleWorkspaceChange}
-			>
+			<Select value={activeWorkspace?.id} onValueChange={handleWorkspaceChange}>
 				<SelectTrigger className={triggerClassName}>
 					<SelectValue placeholder={gt("Select workspace")} />
 				</SelectTrigger>
@@ -121,9 +134,17 @@ export function WorkspaceSwitcher({
 							</div>
 						</SelectItem>
 						<SelectItem value={CREATE_WORKSPACE_VALUE}>
-							<div className="flex items-center gap-2">
-								<Plus className="inline-block size-4" />
-								<T>Create new workspace</T>
+							<div className="flex w-full items-center justify-between gap-3">
+								<div className="flex items-center gap-2">
+									<Plus className="inline-block size-4" />
+									<T>Create new workspace</T>
+								</div>
+								{createdWorkspaceUsage.limit !== null ? (
+									<LimitUsageBadge
+										current={createdWorkspaceUsage.current}
+										limit={createdWorkspaceUsage.limit}
+									/>
+								) : null}
 							</div>
 						</SelectItem>
 					</SelectGroup>
@@ -132,7 +153,18 @@ export function WorkspaceSwitcher({
 			<CreateWorkspaceDialog
 				open={isCreateWorkspaceOpen}
 				onOpenChange={setIsCreateWorkspaceOpen}
+				currentWorkspaceCount={createdWorkspaceUsage.current}
+				maxCreatedWorkspaces={createdWorkspaceUsage.limit}
+				onRequireLimitDialog={() => setIsWorkspaceLimitDialogOpen(true)}
 			/>
+			{createdWorkspaceUsage.limit !== null ? (
+				<WorkspaceCreationLimitDialog
+					open={isWorkspaceLimitDialogOpen}
+					onOpenChange={setIsWorkspaceLimitDialogOpen}
+					current={createdWorkspaceUsage.current}
+					limit={createdWorkspaceUsage.limit}
+				/>
+			) : null}
 			<WorkspaceSettingsDialog
 				open={isSettingsOpen}
 				onOpenChange={setIsSettingsOpen}

@@ -5,22 +5,25 @@ import { z } from "zod"
 
 import { db } from "@/db"
 import { users } from "@/db/schema"
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
+import { isSubscriptionEnforcementEnabled } from "@/lib/subscription-enforcement"
+import { getFreeTierCreatedWorkspaceLimit } from "@/lib/subscription-plans"
+import {
+  createTRPCRouter,
+  getRequiredUserId,
+  protectedProcedure,
+} from "@/server/api/trpc"
 import { userActiveWorkspaceCache } from "@/server/redis/access-control-cache.repository"
 import { subscriptionService } from "@/server/subscriptions/subscription-service.singleton"
 import {
   createWorkspaceForUser,
+  getCreatedWorkspaceCount,
   getWorkspaceMemberships,
 } from "@/server/workspaces"
 import { accessControlService } from "@/server/services/access-control.service"
 
 export const accountRouter = createTRPCRouter({
   getProfilePrivacy: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.auth.userId
-
-    if (!userId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" })
-    }
+    const userId = getRequiredUserId(ctx)
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
@@ -37,25 +40,26 @@ export const accountRouter = createTRPCRouter({
   }),
 
   getWorkspaceContext: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.auth.userId
+    const userId = getRequiredUserId(ctx)
 
-    if (!userId) {
-      throw new TRPCError({ code: "UNAUTHORIZED" })
-    }
-
-    const [user, activeMembership, memberships] = await Promise.all([
-      db.query.users.findFirst({
-        where: eq(users.id, userId),
-        columns: {
-          hasAdminControls: true,
-        },
-      }),
-      accessControlService.resolveActiveWorkspace(userId),
-      getWorkspaceMemberships(userId),
-    ])
+    const [user, activeMembership, memberships, createdWorkspaceCount] =
+      await Promise.all([
+        db.query.users.findFirst({
+          where: eq(users.id, userId),
+          columns: {
+            hasAdminControls: true,
+          },
+        }),
+        accessControlService.resolveActiveWorkspace(userId),
+        getWorkspaceMemberships(userId),
+        getCreatedWorkspaceCount(userId),
+      ])
     const activeTier = await subscriptionService.getWorkspaceTier(
       activeMembership.workspace.id
     )
+    const createdWorkspaceLimit = isSubscriptionEnforcementEnabled()
+      ? getFreeTierCreatedWorkspaceLimit()
+      : null
 
     return {
       hasAdminControls: user?.hasAdminControls ?? false,
@@ -72,6 +76,10 @@ export const accountRouter = createTRPCRouter({
         slug: membership.workspace.slug,
         role: membership.role,
       })),
+      createdWorkspaceUsage: {
+        current: createdWorkspaceCount,
+        limit: createdWorkspaceLimit,
+      },
     }
   }),
 
@@ -82,11 +90,7 @@ export const accountRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
+      const userId = getRequiredUserId(ctx)
 
       const memberships = await getWorkspaceMemberships(userId)
       const nextMembership = memberships.find(
@@ -122,15 +126,13 @@ export const accountRouter = createTRPCRouter({
           .string()
           .trim()
           .min(1, { message: "Workspace name is required." })
-          .max(80, { message: "Workspace name must be 80 characters or fewer." }),
+          .max(80, {
+            message: "Workspace name must be 80 characters or fewer.",
+          }),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
+      const userId = getRequiredUserId(ctx)
 
       const workspace = await createWorkspaceForUser({
         userId,
@@ -147,11 +149,7 @@ export const accountRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.auth.userId
-
-      if (!userId) {
-        throw new TRPCError({ code: "UNAUTHORIZED" })
-      }
+      const userId = getRequiredUserId(ctx)
 
       const clerk = await clerkClient()
       const clerkUser = await clerk.users.getUser(userId)
