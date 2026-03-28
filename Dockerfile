@@ -15,7 +15,6 @@ FROM deps AS builder
 WORKDIR /app
 COPY . .
 
-RUN npm run db:generate
 RUN npm run build
 
 FROM base AS runner
