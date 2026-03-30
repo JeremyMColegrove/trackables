@@ -258,9 +258,9 @@ Do not let routers become large containers of inline business logic.
 
 ## UI Guidelines
 
-- Use Tailwind CSS only
+- Use Shadcn and Tailwind CSS only
 - Keep components small and composable
-- Build reusable primitives for common UI patterns
+- Build reusable primitives for common UI patterns, only if Shadcn does not have the component
 - Avoid mixing heavy business logic into React components
 - Forms should be driven by schemas/config when possible
 - Public submission flows should be simple and minimal

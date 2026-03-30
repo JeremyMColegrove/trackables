@@ -29,7 +29,7 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:publish": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
-		"db:sql": "npx drizzle-kit export > ./example/init.sql"
+		"db:sql": "drizzle-kit export > ./example/init.sql"
 	},
 	"dependencies": {
 		"@clerk/elements": "^0.24.13",

@@ -1,5 +1,4 @@
 FROM node:22-alpine AS base
-
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 ENV NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
@@ -28,7 +27,7 @@ ENV HOSTNAME=0.0.0.0
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm i drizzle-kit tsx drizzle-orm pg dotenv
 
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
