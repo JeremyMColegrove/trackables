@@ -12,6 +12,7 @@ import type {
 } from "@/server/webhooks/webhook.schemas"
 import type { WebhookRepository } from "@/server/webhooks/webhook.repository"
 import type {
+  WebhookTriggerRuleDefinition,
   WebhookTriggerRuleRecord,
   WorkspaceWebhookRecord,
 } from "@/server/webhooks/webhook.types"
@@ -216,8 +217,18 @@ export class WebhookService {
 
     this.assertTriggerRulesCompatible(trackable.kind, input.triggerRules)
 
+    const draftTriggerRules: WebhookTriggerRuleRecord[] = input.triggerRules.map(
+      (rule, index) => ({
+        id: `draft-trigger-rule-${index + 1}`,
+        webhookId: "draft-trackable-webhook",
+        enabled: rule.enabled,
+        position: index,
+        config: rule.config,
+      })
+    )
+
     const triggerRule =
-      input.triggerRules.find((rule) => rule.enabled) ?? input.triggerRules[0]
+      draftTriggerRules.find((rule) => rule.enabled) ?? draftTriggerRules[0]
 
     if (!triggerRule) {
       throw new TRPCError({
@@ -234,13 +245,7 @@ export class WebhookService {
         provider: input.provider.provider,
         config: input.provider,
         enabled: input.enabled,
-        triggerRules: input.triggerRules.map((rule, index) => ({
-          id: `draft-trigger-rule-${index + 1}`,
-          webhookId: "draft-trackable-webhook",
-          enabled: rule.enabled,
-          position: index,
-          config: rule.config,
-        })),
+        triggerRules: draftTriggerRules,
       },
       triggerRule,
     })
@@ -278,10 +283,7 @@ export class WebhookService {
 
   private assertTriggerRulesCompatible(
     trackableKind: "survey" | "api_ingestion",
-    triggerRules: Array<{
-      enabled: boolean
-      config: WebhookTriggerRuleRecord["config"]
-    }>
+    triggerRules: WebhookTriggerRuleDefinition[]
   ) {
     if (trackableKind === "survey") {
       if (triggerRules.length !== 1) {

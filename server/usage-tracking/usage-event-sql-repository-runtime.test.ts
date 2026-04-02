@@ -3,7 +3,7 @@ import { Buffer } from "node:buffer"
 import test from "node:test"
 
 import type { SQLWrapper } from "drizzle-orm"
-import { newDb } from "pg-mem"
+import { DataType, newDb } from "pg-mem"
 
 import { type UsageEventSearchInput } from "@/lib/usage-event-search"
 import { USAGE_EVENT_PAGE_SIZE } from "@/server/usage-tracking/usage-event-config"
@@ -56,11 +56,11 @@ async function createPgMemUsageEventDatabase() {
   const db = newDb()
   db.public.registerOperator({
     operator: "~",
-    left: "text",
-    right: "text",
-    returns: "bool",
+    left: DataType.text,
+    right: DataType.text,
+    returns: DataType.bool,
     implementation: (value: string, pattern: string) => {
-      const match = /^\(\?([imsx]+)\)(.*)$/s.exec(pattern)
+      const match = /^\(\?([imsx]+)\)([\s\S]*)$/.exec(pattern)
       const flags = match?.[1].replaceAll("x", "") ?? ""
       const source = match?.[2] ?? pattern
 
@@ -379,7 +379,7 @@ test("UsageEventSqlRepository executes an apiKey.id search by casting the UUID t
     const repository = new UsageEventSqlRepository({
       async execute(query: SQLWrapper) {
         const built = (
-          query as { toSQL: () => { sql: string; params: unknown[] } }
+          query as unknown as { toSQL: () => { sql: string; params: unknown[] } }
         ).toSQL()
         const result = await client.query(built.sql, built.params)
 

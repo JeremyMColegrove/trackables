@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { AuthModal } from "@/components/auth/auth-modal";
 import { createNoIndexMetadata } from "@/lib/seo";
-
-import { SignUpPageClient } from "../../../sign-up/[[...sign-up]]/sign-up-page-client";
+import { SignUpModalShell } from "./sign-up-modal-shell";
 
 export const metadata: Metadata = createNoIndexMetadata({
 	title: "Create account",
@@ -13,8 +12,8 @@ export const metadata: Metadata = createNoIndexMetadata({
 
 export default function InterceptedSignUpPage() {
 	return (
-		<AuthModal>
-			<SignUpPageClient />
-		</AuthModal>
+		<Suspense fallback={null}>
+			<SignUpModalShell />
+		</Suspense>
 	);
 }

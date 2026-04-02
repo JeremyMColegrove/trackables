@@ -28,7 +28,11 @@ import { logger } from "@/lib/logger"
 
 type SharedFormRuntime = {
   form: TrackableFormSnapshot
-  settings: NonNullable<Awaited<ReturnType<typeof getActiveShareLink>>>["trackable"]["settings"] | null
+  settings:
+    | NonNullable<
+        Awaited<ReturnType<typeof getActiveShareLink>>
+      >["trackable"]["settings"]
+    | null
   shareLink: NonNullable<Awaited<ReturnType<typeof getActiveShareLink>>>
 }
 
@@ -36,7 +40,9 @@ export class SharedFormRuntimeService {
   async loadForViewer(token: string, viewerUserId: string | null) {
     const runtime = await this.loadRuntime(token)
 
-    await quotaService.assertSurveyCanAcceptResponses(runtime.shareLink.trackable.id)
+    await quotaService.assertSurveyCanAcceptResponses(
+      runtime.shareLink.trackable.id
+    )
 
     const requiresAuthentication =
       runtime.shareLink.trackable.settings?.allowAnonymousSubmissions === false
@@ -172,7 +178,8 @@ export class SharedFormRuntimeService {
     return {
       id: createdSubmission.id,
       createdAt: createdSubmission.createdAt.toISOString(),
-      successMessage: runtime.form.successMessage ?? "Thanks for your response.",
+      successMessage:
+        runtime.form.successMessage ?? "Thanks for your response.",
     }
   }
 
@@ -237,7 +244,9 @@ export class SharedFormRuntimeService {
       status: form.status,
       submitLabel: form.submitLabel,
       successMessage: form.successMessage,
-      fields: [...form.fields].sort((left, right) => left.position - right.position),
+      fields: [...form.fields].sort(
+        (left, right) => left.position - right.position
+      ),
     }
   }
 

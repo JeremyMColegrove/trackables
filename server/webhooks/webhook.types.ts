@@ -34,12 +34,15 @@ export interface WebhookSurveyResponseEvent {
 
 export type WebhookEvent = WebhookUsageEvent | WebhookSurveyResponseEvent
 
-export interface WebhookTriggerRuleRecord {
+export interface WebhookTriggerRuleDefinition {
+  enabled: boolean
+  config: WebhookTriggerConfig
+}
+
+export interface WebhookTriggerRuleRecord extends WebhookTriggerRuleDefinition {
   id: string
   webhookId: string
-  enabled: boolean
   position: number
-  config: WebhookTriggerConfig
 }
 
 export interface WorkspaceWebhookRecord {

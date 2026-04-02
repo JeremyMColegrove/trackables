@@ -347,7 +347,7 @@ export function CreateTrackableDialog() {
 				<T>New Trackable</T>
 			</Button>
 			<Dialog open={open} onOpenChange={handleOpenChange}>
-				<DialogContent className="sm:max-w-2xl">
+				<DialogContent className="sm:max-w-xl">
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 							<Wizard

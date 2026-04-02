@@ -43,7 +43,7 @@ import {
   Webhook,
 } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useParams, usePathname } from "next/navigation"
 import { createContext, useContext, useState } from "react"
 import type { TrackableDetails } from "./table-types"
 
@@ -204,7 +204,7 @@ function getTrackableBreadcrumbLabel({
   return gt("Logs")
 }
 
-function TrackableShellSkeleton() {
+export function TrackableShellSkeleton() {
   return (
     <div className="flex min-h-svh bg-muted/20">
       <div className="hidden w-72 border-r bg-sidebar md:block">
@@ -494,12 +494,13 @@ function TrackableLayoutContent({
 }
 
 export function TrackableLayoutClient({
-  trackableId,
   children,
 }: {
-  trackableId: string
   children: React.ReactNode
 }) {
+  const params = useParams<{ id: string }>()
+  const trackableId = params.id
+
   return (
     <RequireAuth fallback={<TrackableShellSkeleton />}>
       <TrackableLayoutContent trackableId={trackableId}>

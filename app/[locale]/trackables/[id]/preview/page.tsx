@@ -1,24 +1,22 @@
 import { auth } from "@clerk/nextjs/server"
 import { TRPCError } from "@trpc/server"
 import { redirect } from "next/navigation"
+import { connection } from "next/server"
+import { Suspense } from "react"
 
+import { SharedFormSkeleton } from "@/app/[locale]/share/[token]/shared-form-status"
 import { formService } from "@/server/services/form.service"
 import { ensureUserProvisioned } from "@/server/user-provisioning"
 import { TrackablePreviewPage } from "./trackable-preview-page"
 
-export const dynamic = "force-dynamic"
-
-export function generateStaticParams() {
-  return []
-}
-
-export default async function PreviewPage({
+async function PreviewPageContent({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string; id: string }>
   searchParams: Promise<{ previewId?: string | string[] }>
 }) {
+  await connection()
   const [{ id }, resolvedSearchParams] = await Promise.all([
     params,
     searchParams,
@@ -57,5 +55,19 @@ export default async function PreviewPage({
       }}
       initialForm={preview.form}
     />
+  )
+}
+
+export default function PreviewPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string; id: string }>
+  searchParams: Promise<{ previewId?: string | string[] }>
+}) {
+  return (
+    <Suspense fallback={<SharedFormSkeleton />}>
+      <PreviewPageContent params={params} searchParams={searchParams} />
+    </Suspense>
   )
 }

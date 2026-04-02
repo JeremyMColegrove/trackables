@@ -17,6 +17,7 @@ import { UsageEventSqlRepository } from "@/server/usage-tracking/usage-event-sql
 import type {
   AttachedWebhookRecord,
   WebhookEventRepositoryContract,
+  WebhookTriggerRuleDefinition,
   WebhookSurveyResponseEvent,
   WebhookUsageEvent,
   WorkspaceWebhookRecord,
@@ -107,10 +108,7 @@ export class WebhookRepository implements WebhookEventRepositoryContract {
     name: string
     provider: WorkspaceWebhookRecord["config"]
     enabled: boolean
-    triggerRules: Array<{
-      enabled: boolean
-      config: WorkspaceWebhookRecord["triggerRules"][number]["config"]
-    }>
+    triggerRules: WebhookTriggerRuleDefinition[]
   }) {
     return db.transaction(async (tx) => {
       const createdByUserId = await this.resolvePersistedUserId(input.userId)
@@ -148,10 +146,7 @@ export class WebhookRepository implements WebhookEventRepositoryContract {
     name: string
     provider: WorkspaceWebhookRecord["config"]
     enabled: boolean
-    triggerRules: Array<{
-      enabled: boolean
-      config: WorkspaceWebhookRecord["triggerRules"][number]["config"]
-    }>
+    triggerRules: WebhookTriggerRuleDefinition[]
   }) {
     await db.transaction(async (tx) => {
       await tx

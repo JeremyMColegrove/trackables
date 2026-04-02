@@ -1,11 +1,15 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
+import { Suspense } from "react"
 
-import { BatchJobsPageClient } from "@/app/[locale]/dashboard/internal/batch/page-client"
+import {
+  BatchJobsPageClient,
+  BatchJobsPageSkeleton,
+} from "@/app/[locale]/dashboard/internal/batch/page-client"
 import { hasAdminControlsEnabled } from "@/server/admin-controls"
 import { ensureUserProvisioned } from "@/server/user-provisioning"
 
-export default async function BatchJobsPage() {
+async function BatchJobsPageContent() {
   const { userId } = await auth()
 
   if (userId) {
@@ -17,4 +21,12 @@ export default async function BatchJobsPage() {
   }
 
   return <BatchJobsPageClient />
+}
+
+export default function BatchJobsPage() {
+  return (
+    <Suspense fallback={<BatchJobsPageSkeleton />}>
+      <BatchJobsPageContent />
+    </Suspense>
+  )
 }

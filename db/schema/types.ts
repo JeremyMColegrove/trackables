@@ -37,6 +37,11 @@ export interface ShortTextFieldConfig {
   maxLength?: number
 }
 
+export interface FileUploadFieldConfig {
+  kind: "file_upload"
+  asset: TrackableAssetReference | null
+}
+
 export interface YouTubeVideoFieldConfig {
   kind: "youtube_video"
   url: string
@@ -47,7 +52,18 @@ export type FormFieldConfig =
   | CheckboxesFieldConfig
   | NotesFieldConfig
   | ShortTextFieldConfig
+  | FileUploadFieldConfig
   | YouTubeVideoFieldConfig
+
+export interface TrackableAssetReference {
+  id: string
+  publicToken: string
+  kind: TrackableAssetKind
+  originalFileName: string
+  mimeType: string
+  imageWidth: number | null
+  imageHeight: number | null
+}
 
 export type FormAnswerValue =
   | { kind: "rating"; value: number }

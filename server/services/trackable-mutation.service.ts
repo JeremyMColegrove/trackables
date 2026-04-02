@@ -24,23 +24,55 @@ function generateSlug(name: string) {
   return `${baseSlug}-${randomSuffix}`
 }
 
+export function assertTrackableArchiveConfirmation(
+  trackable: {
+    name: string
+    archivedAt?: Date | null
+  },
+  confirmationName: string
+) {
+  if (trackable.archivedAt) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Trackable is already archived.",
+    })
+  }
+
+  if (trackable.name !== confirmationName) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Trackable name does not match.",
+    })
+  }
+}
+
 export class TrackableMutationService {
   async create(input: {
     kind: TrackableKind
     name: string
     description?: string
     userId: string
+    workspaceId?: string
   }) {
-    const activeWorkspace = await accessControlService.resolveActiveWorkspace(
-      input.userId
-    )
-    await quotaService.assertCanCreateTrackable(activeWorkspace.workspaceId)
+    const workspaceId = input.workspaceId
+      ? (
+          await accessControlService.assertWorkspaceTrackableManagementAccess(
+            input.userId,
+            input.workspaceId
+          )
+        ).workspaceId
+      : (
+          await accessControlService.assertWorkspaceTrackableManagementAccess(
+            input.userId,
+            (await accessControlService.resolveActiveWorkspace(input.userId))
+              .workspaceId
+          )
+        ).workspaceId
+    await quotaService.assertCanCreateTrackable(workspaceId)
 
     const maxLogRetentionDays =
       input.kind === "api_ingestion"
-        ? await quotaService.getEffectiveLogRetentionDays(
-            activeWorkspace.workspaceId
-          )
+        ? await quotaService.getEffectiveLogRetentionDays(workspaceId)
         : null
     const slug = generateSlug(input.name)
 
@@ -48,7 +80,7 @@ export class TrackableMutationService {
       const [createdTrackable] = await tx
         .insert(trackableItems)
         .values({
-          workspaceId: activeWorkspace.workspaceId,
+          workspaceId,
           kind: input.kind,
           name: input.name,
           description: input.description,
@@ -134,7 +166,10 @@ export class TrackableMutationService {
       )
       let retention = input.apiLogRetentionDays ?? null
 
-      if (tierRetention !== null && (retention === null || retention > tierRetention)) {
+      if (
+        tierRetention !== null &&
+        (retention === null || retention > tierRetention)
+      ) {
         retention = tierRetention as 3 | 7 | 30 | 90
       }
 
@@ -153,6 +188,103 @@ export class TrackableMutationService {
       })
       .where(eq(trackableItems.id, trackableRecord.id))
       .returning()
+
+    return updated
+  }
+
+  async updateSurveyAnonymousResponses(input: {
+    trackableId: string
+    userId: string
+    allowAnonymousSubmissions: boolean
+  }) {
+    const trackable = await accessControlService.assertTrackableAccess(
+      input.trackableId,
+      input.userId,
+      "manage"
+    )
+
+    const trackableRecord = await db.query.trackableItems.findFirst({
+      where: eq(trackableItems.id, trackable.id),
+      columns: {
+        id: true,
+        kind: true,
+        settings: true,
+      },
+    })
+
+    if (!trackableRecord) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Trackable not found.",
+      })
+    }
+
+    if (trackableRecord.kind !== "survey") {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Only survey trackables can update anonymous responses.",
+      })
+    }
+
+    const nextSettings: TrackableSettings = {
+      ...(trackableRecord.settings || {}),
+      allowAnonymousSubmissions: input.allowAnonymousSubmissions,
+    }
+
+    const [updated] = await db
+      .update(trackableItems)
+      .set({
+        settings: nextSettings,
+      })
+      .where(eq(trackableItems.id, trackableRecord.id))
+      .returning()
+
+    return updated
+  }
+
+  async archive(input: {
+    trackableId: string
+    userId: string
+    confirmationName: string
+  }) {
+    const trackable = await accessControlService.assertTrackableAccess(
+      input.trackableId,
+      input.userId,
+      "manage"
+    )
+
+    const trackableRecord = await db.query.trackableItems.findFirst({
+      where: eq(trackableItems.id, trackable.id),
+      columns: {
+        id: true,
+        name: true,
+        archivedAt: true,
+      },
+    })
+
+    if (!trackableRecord) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Trackable not found.",
+      })
+    }
+
+    assertTrackableArchiveConfirmation(
+      trackableRecord,
+      input.confirmationName
+    )
+
+    const [updated] = await db
+      .update(trackableItems)
+      .set({
+        archivedAt: new Date(),
+      })
+      .where(eq(trackableItems.id, trackableRecord.id))
+      .returning({
+        id: trackableItems.id,
+        name: trackableItems.name,
+        archivedAt: trackableItems.archivedAt,
+      })
 
     return updated
   }

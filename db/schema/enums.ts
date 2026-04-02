@@ -27,6 +27,7 @@ export const trackableFormFieldKindEnum = pgEnum("trackable_form_field_kind", [
   "checkboxes",
   "notes",
   "short_text",
+  "file_upload",
   "youtube_video",
 ])
 

@@ -2,6 +2,7 @@ import { z } from "zod"
 
 import type {
   CheckboxesFieldConfig,
+  FileUploadFieldConfig,
   FormAnswerValue,
   FormFieldConfig,
   NotesFieldConfig,
@@ -39,8 +40,11 @@ export type PublicFormSubmissionInput = z.infer<
 
 type SubmissionAnswer = TrackableSubmissionSnapshot["answers"][number]
 type AnswerableTrackableFormField = TrackableFormFieldSnapshot & {
-  kind: Exclude<FormFieldConfig["kind"], "youtube_video">
-  config: Exclude<FormFieldConfig, { kind: "youtube_video" }>
+  kind: Exclude<FormFieldConfig["kind"], "youtube_video" | "file_upload">
+  config: Exclude<
+    FormFieldConfig,
+    { kind: "youtube_video" } | { kind: "file_upload" }
+  >
 }
 
 export function isRatingField(
@@ -79,6 +83,15 @@ export function isShortTextField(
   return field.kind === "short_text" && field.config.kind === "short_text"
 }
 
+export function isFileUploadField(
+  field: TrackableFormFieldSnapshot
+): field is TrackableFormFieldSnapshot & {
+  kind: "file_upload"
+  config: FileUploadFieldConfig
+} {
+  return field.kind === "file_upload" && field.config.kind === "file_upload"
+}
+
 export function isYouTubeVideoField(
   field: TrackableFormFieldSnapshot
 ): field is TrackableFormFieldSnapshot & {
@@ -91,7 +104,7 @@ export function isYouTubeVideoField(
 export function isAnswerableField(
   field: TrackableFormFieldSnapshot
 ): field is AnswerableTrackableFormField {
-  return !isYouTubeVideoField(field)
+  return !isYouTubeVideoField(field) && !isFileUploadField(field)
 }
 
 export function buildSubmissionSnapshot(
@@ -306,7 +319,6 @@ function parseTextValue(
 
   return normalizedValue
 }
-
 export function getEmptyAnswerValue(
   field: AnswerableTrackableFormField
 ): FormAnswerValue {

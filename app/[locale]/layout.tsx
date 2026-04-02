@@ -9,17 +9,10 @@ import { cn } from "@/lib/utils"
 import { ClerkProvider } from "@clerk/nextjs"
 import { GTProvider } from "gt-next"
 import type { Metadata } from "next"
-import { Geist_Mono, Inter } from "next/font/google"
 import { notFound } from "next/navigation"
+import { Children, Fragment, Suspense } from "react"
 import { Toaster } from "sonner"
 import "../globals.css"
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
-
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-})
 
 export const metadata: Metadata = {
   metadataBase: buildAbsoluteUrl("/"),
@@ -48,6 +41,10 @@ export const metadata: Metadata = {
   },
 }
 
+export function generateStaticParams() {
+  return supportedLocales.map((locale) => ({ locale }))
+}
+
 export default async function RootLayout({
   auth,
   children,
@@ -71,12 +68,7 @@ export default async function RootLayout({
     <html
       lang={locale}
       suppressHydrationWarning
-      className={cn(
-        "antialiased",
-        fontMono.variable,
-        "font-sans",
-        inter.variable
-      )}
+      className={cn("antialiased", "font-sans")}
     >
       <body className="min-h-svh bg-background">
         <ClerkProvider
@@ -89,9 +81,15 @@ export default async function RootLayout({
               <AppSettingsProvider>
                 <TooltipProvider>
                   <ThemeProvider>
-                    {children}
-                    {auth}
-                    <Toaster position="top-center" />
+                    {Children.toArray([
+                      <Fragment key="page">{children}</Fragment>,
+                      auth ? (
+                        <Suspense key="auth-slot" fallback={null}>
+                          <Fragment>{auth}</Fragment>
+                        </Suspense>
+                      ) : null,
+                      <Toaster key="toaster" position="top-center" />,
+                    ])}
                   </ThemeProvider>
                 </TooltipProvider>
               </AppSettingsProvider>

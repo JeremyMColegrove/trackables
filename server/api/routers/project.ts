@@ -299,6 +299,21 @@ export const trackablesRouter = createTRPCRouter({
       })
     }),
 
+  archive: protectedProcedure
+    .input(
+      z.object({
+        trackableId: z.string().uuid(),
+        confirmationName: z.string().min(1, "Trackable name is required"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return trackableMutationService.archive({
+        trackableId: input.trackableId,
+        userId: getRequiredUserId(ctx),
+        confirmationName: input.confirmationName,
+      })
+    }),
+
   upsertEmailGrant: protectedProcedure
     .input(
       z.object({

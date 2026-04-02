@@ -1,3 +1,4 @@
+import { TrackableAssetAnswer } from "@/components/trackable-asset-answer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -12,18 +13,29 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import type { TrackableAssetRecord } from "@/db/schema/types"
 import {
   createCheckboxOption,
   createOptionValue,
   type EditableTrackableFormField,
 } from "@/lib/project-form-builder"
+import { toTrackableAssetReference } from "@/lib/trackable-assets"
 import { buildYouTubeEmbedUrl } from "@/lib/youtube"
-import { ArrowDown, ArrowUp, Edit3, Plus, Star, Trash2 } from "lucide-react"
+import {
+  ArrowDown,
+  ArrowUp,
+  Edit3,
+  Loader2,
+  Plus,
+  Star,
+  Trash2,
+} from "lucide-react"
 import { useState } from "react"
 import { T, useGT } from "gt-next"
 import { formatFieldKind } from "../display-utils"
 import {
   isCheckboxesField,
+  isFileUploadField,
   isNotesField,
   isRatingField,
   isShortTextField,
@@ -31,6 +43,7 @@ import {
 } from "../utils/form-field-utils"
 
 export function FieldPreview({
+  trackableId,
   field,
   index,
   total,
@@ -38,6 +51,7 @@ export function FieldPreview({
   onMove,
   onRemove,
 }: {
+  trackableId: string
   field: EditableTrackableFormField
   index: number
   total: number
@@ -47,10 +61,57 @@ export function FieldPreview({
 }) {
   const gt = useGT()
   const [isEditing, setIsEditing] = useState(false)
-  const isDisplayOnlyField = isYouTubeVideoField(field)
+  const [assetUploadError, setAssetUploadError] = useState<string | null>(null)
+  const [isUploadingAsset, setIsUploadingAsset] = useState(false)
+  const isDisplayOnlyField =
+    isYouTubeVideoField(field) || isFileUploadField(field)
   const youtubeEmbedUrl = isYouTubeVideoField(field)
     ? buildYouTubeEmbedUrl(field.config.url)
     : null
+
+  async function handleAssetUpload(file: File | null) {
+    if (!file || !isFileUploadField(field)) {
+      return
+    }
+
+    setAssetUploadError(null)
+    setIsUploadingAsset(true)
+
+    try {
+      const formData = new FormData()
+      formData.set("trackableId", trackableId)
+      formData.set("file", file)
+
+      const response = await fetch("/api/trackable-assets", {
+        method: "POST",
+        body: formData,
+      })
+      const payload = (await response.json()) as
+        | TrackableAssetRecord
+        | { error?: string }
+
+      if (!response.ok || "error" in payload || !("id" in payload)) {
+        throw new Error(
+          ("error" in payload && payload.error) || "Unable to upload file."
+        )
+      }
+
+      onChange({
+        ...field,
+        required: false,
+        config: {
+          ...field.config,
+          asset: toTrackableAssetReference(payload),
+        },
+      })
+    } catch (error) {
+      setAssetUploadError(
+        error instanceof Error ? error.message : "Unable to upload file."
+      )
+    } finally {
+      setIsUploadingAsset(false)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -210,6 +271,65 @@ export function FieldPreview({
                     <p className="text-xs text-muted-foreground">
                       <T>Paste a standard YouTube video URL to embed it.</T>
                     </p>
+                  </div>
+                ) : null}
+
+                {isFileUploadField(field) ? (
+                  <div className="space-y-3">
+                    <Label>
+                      <T>Upload file or image</T>
+                    </Label>
+
+                    {field.config.asset ? (
+                      <TrackableAssetAnswer asset={field.config.asset} />
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+                        <T>Upload a file or image to display in the survey.</T>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <Input
+                        type="file"
+                        disabled={isUploadingAsset}
+                        onChange={(event) => {
+                          const nextFile = event.target.files?.[0] ?? null
+                          void handleAssetUpload(nextFile)
+                          event.target.value = ""
+                        }}
+                      />
+                      {field.config.asset ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() =>
+                            onChange({
+                              ...field,
+                              required: false,
+                              config: {
+                                ...field.config,
+                                asset: null,
+                              },
+                            })
+                          }
+                        >
+                          <T>Remove file</T>
+                        </Button>
+                      ) : null}
+                    </div>
+
+                    {isUploadingAsset ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="size-4 animate-spin" />
+                        <T>Uploading...</T>
+                      </div>
+                    ) : null}
+
+                    {assetUploadError ? (
+                      <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                        {assetUploadError}
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -374,6 +494,16 @@ export function FieldPreview({
           disabled
           placeholder={field.config.placeholder ?? "Type your answer..."}
         />
+      ) : null}
+
+      {isFileUploadField(field) ? (
+        field.config.asset ? (
+          <TrackableAssetAnswer asset={field.config.asset} />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+            <T>Upload a file or image to preview it here.</T>
+          </div>
+        )
       ) : null}
 
       {isYouTubeVideoField(field) ? (

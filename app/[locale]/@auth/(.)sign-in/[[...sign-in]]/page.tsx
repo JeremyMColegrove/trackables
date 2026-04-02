@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { AuthModal } from "@/components/auth/auth-modal";
 import { createNoIndexMetadata } from "@/lib/seo";
-
-import { SignInPageClient } from "../../../sign-in/[[...sign-in]]/sign-in-page-client";
+import { SignInPageEntry } from "../../../sign-in/[[...sign-in]]/sign-in-page-entry";
 
 export const metadata: Metadata = createNoIndexMetadata({
 	title: "Sign in",
@@ -13,8 +13,10 @@ export const metadata: Metadata = createNoIndexMetadata({
 
 export default function InterceptedSignInPage() {
 	return (
-		<AuthModal>
-			<SignInPageClient />
-		</AuthModal>
+		<Suspense fallback={null}>
+			<AuthModal>
+				<SignInPageEntry redirectUrl="/dashboard" />
+			</AuthModal>
+		</Suspense>
 	);
 }

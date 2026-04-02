@@ -147,7 +147,10 @@ export const dashboardRouter = createTRPCRouter({
     )
 
     return db.query.trackableItems.findMany({
-      where: eq(trackableItems.workspaceId, activeWorkspace.workspaceId),
+      where: and(
+        eq(trackableItems.workspaceId, activeWorkspace.workspaceId),
+        isNull(trackableItems.archivedAt)
+      ),
       orderBy: [desc(trackableItems.createdAt)],
       limit: 10,
       columns: {

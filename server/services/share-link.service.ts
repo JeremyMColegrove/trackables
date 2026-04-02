@@ -1,6 +1,6 @@
 import "server-only"
 import { TRPCError } from "@trpc/server"
-import { and, eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import { randomBytes } from "node:crypto"
 
 import { db } from "@/db"
@@ -16,6 +16,13 @@ function createShareToken() {
 }
 
 export class ShareLinkService {
+  async findLatestShareLink(trackableId: string) {
+    return db.query.trackableShareLinks.findFirst({
+      where: eq(trackableShareLinks.trackableId, trackableId),
+      orderBy: [desc(trackableShareLinks.createdAt)],
+    })
+  }
+
   async upsertEmailGrant(input: {
     trackableId: string
     userId: string

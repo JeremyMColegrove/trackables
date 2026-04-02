@@ -58,7 +58,7 @@ export class TrackableQueryService {
       where: eq(trackableItems.id, trackableId),
     })
 
-    if (!trackable) {
+    if (!trackable || trackable.archivedAt) {
       throw new TRPCError({
         code: "NOT_FOUND",
         message: "Trackable not found.",
@@ -149,7 +149,7 @@ export class TrackableQueryService {
       },
     })
 
-    if (!trackable) {
+    if (!trackable || trackable.archivedAt) {
       throw new TRPCError({
         code: "NOT_FOUND",
         message: "Trackable not found.",

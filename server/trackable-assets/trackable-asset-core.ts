@@ -323,25 +323,7 @@ export class TrackableAssetService {
 
   async getAuthorizedAssetDownload(input: AuthorizedTrackableAssetReadInput) {
     const asset = await this.requireAssetByPublicToken(input.publicToken)
-
-    const hasPublicShareAccess =
-      typeof input.shareToken === "string" &&
-      input.shareToken.trim().length > 0 &&
-      (await this.canReadAssetViaShareToken(
-        asset.trackableId,
-        input.shareToken
-      ))
-
-    if (!hasPublicShareAccess) {
-      if (!input.userId) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Trackable asset not found.",
-        })
-      }
-
-      await this.authorizer.assertManageAccess(asset.trackableId, input.userId)
-    }
+    await this.assertReadAccess(asset.trackableId, input)
 
     const filePath = path.join(this.storageRoot, ...asset.storageKey.split("/"))
 
@@ -376,6 +358,32 @@ export class TrackableAssetService {
 
   private get sharedLinkLoader() {
     return this.dependencies.sharedLinkLoader
+  }
+
+  private async assertReadAccess(
+    trackableId: string,
+    input: {
+      shareToken?: string | null
+      userId?: string | null
+    }
+  ) {
+    const hasPublicShareAccess =
+      typeof input.shareToken === "string" &&
+      input.shareToken.trim().length > 0 &&
+      (await this.canReadAssetViaShareToken(trackableId, input.shareToken))
+
+    if (hasPublicShareAccess) {
+      return
+    }
+
+    if (!input.userId) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Trackable asset not found.",
+      })
+    }
+
+    await this.authorizer.assertManageAccess(trackableId, input.userId)
   }
 
   private get sharp() {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 
 import { createNoIndexMetadata } from "@/lib/seo"
 
@@ -10,14 +11,16 @@ export const metadata: Metadata = createNoIndexMetadata({
   description: "Authenticated dashboard for managing trackables.",
 })
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
     <WorkspaceContextProvider>
-      <DashboardShell>{children}</DashboardShell>
+      <Suspense fallback={<>{children}</>}>
+        <DashboardShell>{children}</DashboardShell>
+      </Suspense>
     </WorkspaceContextProvider>
   )
 }

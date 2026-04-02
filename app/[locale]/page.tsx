@@ -6,8 +6,6 @@ import { createPageMetadata } from "@/lib/seo"
 import { siteConfig } from "@/lib/site-config"
 import { LandingPage } from "./landing-page"
 
-export const dynamic = "force-dynamic"
-
 export async function generateMetadata({
   params,
 }: {
@@ -24,12 +22,24 @@ export async function generateMetadata({
   })
 }
 
-export default async function Page() {
+async function LandingPageRedirect() {
   const { userId } = await auth()
 
   if (userId) {
     redirect("/dashboard")
   }
+
+  return null
+}
+
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}) {
+  await params
+
+  await LandingPageRedirect()
 
   return <LandingPage />
 }

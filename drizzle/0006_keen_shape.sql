@@ -1,0 +1,1 @@
+ALTER TYPE "public"."trackable_form_field_kind" ADD VALUE 'file_upload' BEFORE 'youtube_video';

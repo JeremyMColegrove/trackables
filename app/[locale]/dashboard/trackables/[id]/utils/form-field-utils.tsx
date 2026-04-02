@@ -1,4 +1,11 @@
-import { CheckSquare, FileText, FormInput, Star, Video } from "lucide-react"
+import {
+  CheckSquare,
+  FileText,
+  FormInput,
+  Paperclip,
+  Star,
+  Video,
+} from "lucide-react"
 import type { EditableTrackableFormField } from "@/lib/project-form-builder"
 
 export type RatingConfig = Extract<
@@ -16,6 +23,10 @@ export type NotesConfig = Extract<
 export type ShortTextConfig = Extract<
   EditableTrackableFormField["config"],
   { kind: "short_text" }
+>
+export type FileUploadConfig = Extract<
+  EditableTrackableFormField["config"],
+  { kind: "file_upload" }
 >
 export type YouTubeVideoConfig = Extract<
   EditableTrackableFormField["config"],
@@ -46,6 +57,12 @@ export function isShortTextField(
   return field.config.kind === "short_text"
 }
 
+export function isFileUploadField(
+  field: EditableTrackableFormField
+): field is EditableTrackableFormField & { config: FileUploadConfig } {
+  return field.config.kind === "file_upload"
+}
+
 export function isYouTubeVideoField(
   field: EditableTrackableFormField
 ): field is EditableTrackableFormField & { config: YouTubeVideoConfig } {
@@ -62,6 +79,8 @@ export function getFieldIcon(kind: EditableTrackableFormField["kind"]) {
       return <FileText className="size-4" />
     case "short_text":
       return <FormInput className="size-4" />
+    case "file_upload":
+      return <Paperclip className="size-4" />
     case "youtube_video":
       return <Video className="size-4" />
   }

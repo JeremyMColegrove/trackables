@@ -41,6 +41,7 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  cacheComponents: false,
   output: "standalone",
   poweredByHeader: false,
   async headers() {
@@ -62,4 +63,6 @@ const nextConfig = {
   },
 }
 
-export default withGTConfig(nextConfig)
+export default withGTConfig(nextConfig, {
+  experimentalLocaleResolution: true,
+})

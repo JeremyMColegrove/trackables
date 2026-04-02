@@ -21,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { formatUserTimestamp } from "@/lib/date-time"
 import { useTRPC } from "@/trpc/client"
-import { T } from "gt-next";
+import { T } from "gt-next"
 
 const EMPTY_JOBS: Array<{
   key: string
@@ -54,7 +54,7 @@ function getStatusVariant(status: string | null) {
   }
 }
 
-function BatchJobsPageSkeleton() {
+export function BatchJobsPageSkeleton() {
   return (
     <main className="flex-1">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -129,8 +129,15 @@ function BatchJobsPageContent() {
       description={<T>Internal cron-driven batch processes.</T>}
       headerActions={
         <>
-          <Badge variant={jobSummary.schedulerEnabled ? "default" : "secondary"} className="h-7">
-            {jobSummary.schedulerEnabled ? <T>Scheduler enabled</T> : <T>Scheduler disabled</T>}
+          <Badge
+            variant={jobSummary.schedulerEnabled ? "default" : "secondary"}
+            className="h-7"
+          >
+            {jobSummary.schedulerEnabled ? (
+              <T>Scheduler enabled</T>
+            ) : (
+              <T>Scheduler disabled</T>
+            )}
           </Badge>
           <Button
             variant="outline"
@@ -151,42 +158,57 @@ function BatchJobsPageContent() {
     >
       <div className="flex flex-col gap-8">
         {/* Jobs Data Table */}
-        <div className="rounded-xl border border-border/40 bg-card overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-border/40 bg-card">
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead className="pl-6"><T>Job Details</T></TableHead>
-                <TableHead><T>Schedule</T></TableHead>
-                <TableHead><T>Last Ran</T></TableHead>
-                <TableHead><T>Status</T></TableHead>
-                <TableHead className="text-right pr-6"><T>Actions</T></TableHead>
+                <TableHead className="pl-6">
+                  <T>Job Details</T>
+                </TableHead>
+                <TableHead>
+                  <T>Schedule</T>
+                </TableHead>
+                <TableHead>
+                  <T>Last Ran</T>
+                </TableHead>
+                <TableHead>
+                  <T>Status</T>
+                </TableHead>
+                <TableHead className="pr-6 text-right">
+                  <T>Actions</T>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {jobs.map((job) => (
                 <TableRow key={job.key}>
-                  <TableCell className="pl-6 align-top pt-4">
+                  <TableCell className="pt-4 pl-6 align-top">
                     <div className="flex flex-col gap-1">
                       <span className="font-medium">{job.name}</span>
-                      <span className="text-xs text-muted-foreground font-mono">{job.key}</span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {job.key}
+                      </span>
                     </div>
                   </TableCell>
-                  <TableCell className="align-top pt-4">
-                    <span className="text-sm font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+                  <TableCell className="pt-4 align-top">
+                    <span className="rounded bg-muted/50 px-2 py-0.5 font-mono text-sm text-muted-foreground">
                       {job.schedule}
                     </span>
                   </TableCell>
-                  <TableCell className="align-top pt-4">
+                  <TableCell className="pt-4 align-top">
                     <span className="text-sm text-muted-foreground">
                       {formatDateTime(job.lastStartedAt)}
                     </span>
                   </TableCell>
-                  <TableCell className="align-top pt-4">
-                    <Badge variant={getStatusVariant(job.lastStatus)} className="capitalize">
+                  <TableCell className="pt-4 align-top">
+                    <Badge
+                      variant={getStatusVariant(job.lastStatus)}
+                      className="capitalize"
+                    >
                       {job.lastStatus ?? "unknown"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="pr-6 align-top pt-4">
+                  <TableCell className="pt-4 pr-6 align-top">
                     <div className="flex items-center justify-end gap-4">
                       <Switch
                         checked={job.enabled}
@@ -199,7 +221,7 @@ function BatchJobsPageContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                        className="size-8 text-muted-foreground hover:bg-muted hover:text-foreground"
                         title="Run Now"
                         onClick={() => triggerMutation.mutate({ key: job.key })}
                         disabled={triggerMutation.isPending}
@@ -212,7 +234,10 @@ function BatchJobsPageContent() {
               ))}
               {jobs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-sm text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="h-24 text-center text-sm text-muted-foreground"
+                  >
                     <T>No batch jobs are registered.</T>
                   </TableCell>
                 </TableRow>

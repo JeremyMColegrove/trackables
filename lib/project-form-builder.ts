@@ -11,6 +11,7 @@ const fieldKindSchema = z.enum([
   "checkboxes",
   "notes",
   "short_text",
+  "file_upload",
   "youtube_video",
 ])
 
@@ -83,6 +84,21 @@ const shortTextFieldConfigSchema = z.object({
   maxLength: z.int().min(1).max(500).optional(),
 })
 
+const fileUploadFieldConfigSchema = z.object({
+  kind: z.literal("file_upload"),
+  asset: z
+    .object({
+      id: z.string().uuid(),
+      publicToken: z.string().trim().min(1),
+      kind: z.enum(["image", "file"]),
+      originalFileName: z.string().trim().min(1).max(120),
+      mimeType: z.string().trim().min(1).max(255),
+      imageWidth: z.number().int().positive().nullable(),
+      imageHeight: z.number().int().positive().nullable(),
+    })
+    .nullable(),
+})
+
 const youtubeVideoFieldConfigSchema = z.object({
   kind: z.literal("youtube_video"),
   url: z
@@ -100,6 +116,7 @@ const formFieldConfigSchema = z.discriminatedUnion("kind", [
   checkboxesFieldConfigSchema,
   notesFieldConfigSchema,
   shortTextFieldConfigSchema,
+  fileUploadFieldConfigSchema,
   youtubeVideoFieldConfigSchema,
 ])
 
@@ -266,6 +283,21 @@ export function createDefaultEditableField(
           kind,
           placeholder: "One short answer",
           maxLength: 120,
+        },
+      }
+    case "file_upload":
+      return {
+        id,
+        key: createFieldKey("file_upload", position),
+        kind,
+        label: "Upload a file",
+        description:
+          "Responders can upload an image or file with their answer.",
+        required: false,
+        position,
+        config: {
+          kind,
+          asset: null,
         },
       }
     case "youtube_video":

@@ -54,6 +54,12 @@ function createRepositoryFixtures() {
   }
 }
 
+interface QuerySqlCase {
+  query: string
+  expectedParams: readonly (number | string)[]
+  expectedSqlPattern?: RegExp
+}
+
 test("UsageEventSqlRepository builds the exact flat count SQL", () => {
   const { parser, planner, repository } = createRepositoryFixtures()
   const plan = planner.plan(
@@ -445,7 +451,7 @@ test("UsageEventSqlRepository builds the exact event-sort keyset SQL", () => {
 
 test("UsageEventSqlRepository supports the Liqe syntax matrix end-to-end", () => {
   const { parser, planner, repository } = createRepositoryFixtures()
-  const cases = [
+  const cases: QuerySqlCase[] = [
     {
       query: "foo",
       expectedParams: ["(?i)foo"],
@@ -581,7 +587,7 @@ test("UsageEventSqlRepository supports the Liqe syntax matrix end-to-end", () =>
       expectedParams: ["name", "(?i)foo", "bio", "(?i)bar", "bio", "(?i)baz"],
       expectedSqlPattern: /\sand\s.+\sor\s/,
     },
-  ] as const
+  ]
 
   for (const testCase of cases) {
     const plan = planner.plan(

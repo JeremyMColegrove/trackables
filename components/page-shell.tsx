@@ -1,3 +1,5 @@
+import { Children } from "react"
+
 export function PageShell({
   title,
   description,
@@ -16,12 +18,14 @@ export function PageShell({
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
             {description && (
-              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {description}
+              </p>
             )}
           </div>
           {headerActions && (
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              {headerActions}
+              {Children.toArray(headerActions)}
             </div>
           )}
         </div>

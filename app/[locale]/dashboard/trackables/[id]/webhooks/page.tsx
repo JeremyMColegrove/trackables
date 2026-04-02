@@ -1,11 +1,11 @@
-import { WebhooksPageClient } from "./webhooks-page-client"
+import { Suspense } from "react"
 
-export const dynamic = "force-dynamic"
-
-export function generateStaticParams() {
-  return []
-}
+import { WebhooksPageEntry } from "./webhooks-page-entry"
 
 export default function TrackableWebhooksPage() {
-  return <WebhooksPageClient />
+  return (
+    <Suspense fallback={null}>
+      <WebhooksPageEntry />
+    </Suspense>
+  )
 }

@@ -87,6 +87,8 @@ export function formatFieldKind(value: string) {
       return "Notes"
     case "short_text":
       return "Short text"
+    case "file_upload":
+      return "File upload"
     case "youtube_video":
       return "YouTube video"
     default:
@@ -108,6 +110,12 @@ export function formatFieldConfigSummary(config: FormFieldConfig) {
       return config.maxLength
         ? `Up to ${config.maxLength} characters`
         : "Single line"
+    case "file_upload":
+      return config.asset
+        ? config.asset.kind === "image"
+          ? "Displays uploaded image"
+          : "Displays downloadable file"
+        : "No asset selected"
     case "youtube_video":
       return "Embedded player"
     default:

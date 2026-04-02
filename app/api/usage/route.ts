@@ -12,8 +12,6 @@ import {
   parseUsagePayload,
 } from "@/server/usage-tracking/usage-request-security"
 
-export const runtime = "nodejs"
-
 function createUsageResponse(
   body: Record<string, unknown>,
   init?: ResponseInit

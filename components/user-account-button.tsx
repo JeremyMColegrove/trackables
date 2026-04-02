@@ -2,8 +2,9 @@
 
 import { UserButton, useUser } from "@clerk/nextjs"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { LoaderCircle, Shield } from "lucide-react"
+import { KeyRound, LoaderCircle, Shield } from "lucide-react"
 
+import { McpUserProfilePage } from "@/components/mcp-user-profile-page"
 import { Switch } from "@/components/ui/switch"
 import { useTRPC } from "@/trpc/client"
 import { T, useGT } from "gt-next"
@@ -12,6 +13,13 @@ export function UserAccountButton() {
   const gt = useGT()
   return (
     <UserButton>
+      <UserButton.UserProfilePage
+        label={gt("MCP")}
+        labelIcon={<KeyRound className="size-4" />}
+        url="mcp"
+      >
+        <McpUserProfilePage />
+      </UserButton.UserProfilePage>
       <UserButton.UserProfilePage
         label={gt("Privacy")}
         labelIcon={<Shield className="size-4" />}
@@ -86,7 +94,9 @@ function ProfilePrivacyPage() {
 
       <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
         <div className="space-y-1">
-          <p className="text-sm font-medium text-foreground"><T>Private profile</T></p>
+          <p className="text-sm font-medium text-foreground">
+            <T>Private profile</T>
+          </p>
           <p className="text-sm text-muted-foreground">
             <T>When enabled, your profile is treated as private by the app.</T>
           </p>

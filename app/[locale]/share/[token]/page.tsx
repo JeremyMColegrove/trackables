@@ -1,15 +1,11 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 
 import { siteConfig } from "@/lib/site-config"
 import { getShareMetadataContent } from "@/lib/share-metadata"
 
 import { SharedFormPage } from "./shared-form-page"
-
-export const dynamic = "force-dynamic"
-
-export function generateStaticParams() {
-  return []
-}
+import { SharedFormSkeleton } from "./shared-form-status"
 
 export async function generateMetadata({
   params,
@@ -58,7 +54,7 @@ export async function generateMetadata({
   }
 }
 
-export default async function SharePage({
+async function SharePageContent({
   params,
 }: {
   params: Promise<{ token: string }>
@@ -66,4 +62,16 @@ export default async function SharePage({
   const resolvedParams = await params
 
   return <SharedFormPage token={resolvedParams.token} />
+}
+
+export default function SharePage({
+  params,
+}: {
+  params: Promise<{ token: string }>
+}) {
+  return (
+    <Suspense fallback={<SharedFormSkeleton />}>
+      <SharePageContent params={params} />
+    </Suspense>
+  )
 }

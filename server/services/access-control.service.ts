@@ -9,7 +9,10 @@ import {
   workspaceMembers,
   users,
 } from "@/db/schema"
-import { userActiveWorkspaceCache, userMembershipsCache } from "@/server/redis/access-control-cache.repository"
+import {
+  userActiveWorkspaceCache,
+  userMembershipsCache,
+} from "@/server/redis/access-control-cache.repository"
 
 export type AccessRole = "submit" | "view" | "manage"
 export type WorkspaceRole = "owner" | "admin" | "member" | "viewer"
@@ -27,16 +30,21 @@ export class AccessControlService {
     return ["manage"] as const
   }
 
-  private canManageWorkspace(role: WorkspaceRole) {
+  canManageWorkspaceRole(role: WorkspaceRole) {
     return role === "owner" || role === "admin"
   }
 
-  private canManageTrackable(role: WorkspaceRole) {
+  canManageTrackableRole(role: WorkspaceRole) {
     return role === "owner" || role === "admin" || role === "member"
   }
 
-  private canViewTrackable(role: WorkspaceRole) {
-    return role === "owner" || role === "admin" || role === "member" || role === "viewer"
+  canViewTrackableRole(role: WorkspaceRole) {
+    return (
+      role === "owner" ||
+      role === "admin" ||
+      role === "member" ||
+      role === "viewer"
+    )
   }
 
   async assertTrackableAccess(
@@ -49,28 +57,35 @@ export class AccessControlService {
       columns: {
         id: true,
         kind: true,
+        archivedAt: true,
         workspaceId: true,
       },
     })
 
-    if (!trackable) {
+    if (!trackable || trackable.archivedAt) {
       throw new TRPCError({
         code: "NOT_FOUND",
         message: "Trackable not found.",
       })
     }
 
-    const memberships = await userMembershipsCache.get(userId) || []
+    const memberships = (await userMembershipsCache.get(userId)) || []
     const workspaceMembership = memberships.find(
       (membership) => membership.workspaceId === trackable.workspaceId
     )
 
     if (workspaceMembership) {
       let hasWorkspaceAccess = false
-      if (minimumRole === "manage" && this.canManageTrackable(workspaceMembership.role)) {
-         hasWorkspaceAccess = true
-      } else if ((minimumRole === "view" || minimumRole === "submit") && this.canViewTrackable(workspaceMembership.role)) {
-         hasWorkspaceAccess = true
+      if (
+        minimumRole === "manage" &&
+        this.canManageTrackableRole(workspaceMembership.role)
+      ) {
+        hasWorkspaceAccess = true
+      } else if (
+        (minimumRole === "view" || minimumRole === "submit") &&
+        this.canViewTrackableRole(workspaceMembership.role)
+      ) {
+        hasWorkspaceAccess = true
       }
 
       if (hasWorkspaceAccess) {
@@ -104,9 +119,10 @@ export class AccessControlService {
     userId: string,
     minimumRole: AccessRole = "view"
   ) {
-    const validWorkspaceRoles = minimumRole === "manage" 
-      ? ["owner", "admin", "member"] as const
-      : ["owner", "admin", "member", "viewer"] as const
+    const validWorkspaceRoles =
+      minimumRole === "manage"
+        ? (["owner", "admin", "member"] as const)
+        : (["owner", "admin", "member", "viewer"] as const)
 
     const [workspaceTrackableRows, grantedTrackables] = await Promise.all([
       db
@@ -120,19 +136,32 @@ export class AccessControlService {
             eq(workspaceMembers.workspaceId, trackableItems.workspaceId),
             eq(workspaceMembers.userId, userId),
             inArray(workspaceMembers.role, validWorkspaceRoles),
-            isNull(workspaceMembers.revokedAt)
+            isNull(workspaceMembers.revokedAt),
+            isNull(trackableItems.archivedAt)
           )
         ),
-      db.query.trackableAccessGrants.findMany({
-        where: and(
-          eq(trackableAccessGrants.subjectUserId, userId),
-          inArray(trackableAccessGrants.role, this.getAllowedRoles(minimumRole)),
-          isNull(trackableAccessGrants.revokedAt)
+      db
+        .select({
+          trackableId: trackableAccessGrants.trackableId,
+        })
+        .from(trackableAccessGrants)
+        .innerJoin(
+          trackableItems,
+          and(
+            eq(trackableItems.id, trackableAccessGrants.trackableId),
+            isNull(trackableItems.archivedAt)
+          )
+        )
+        .where(
+          and(
+            eq(trackableAccessGrants.subjectUserId, userId),
+            inArray(
+              trackableAccessGrants.role,
+              this.getAllowedRoles(minimumRole)
+            ),
+            isNull(trackableAccessGrants.revokedAt)
+          )
         ),
-        columns: {
-          trackableId: true,
-        },
-      }),
     ])
 
     return Array.from(
@@ -146,7 +175,7 @@ export class AccessControlService {
   async resolveActiveWorkspace(userId: string) {
     const activeWorkspaceId = await userActiveWorkspaceCache.get(userId)
 
-    const memberships = await userMembershipsCache.get(userId) || []
+    const memberships = (await userMembershipsCache.get(userId)) || []
 
     const activeMembership =
       memberships.find(
@@ -168,7 +197,7 @@ export class AccessControlService {
           updatedAt: new Date(),
         })
         .where(eq(users.id, userId))
-        
+
       await userActiveWorkspaceCache.set(userId, activeMembership.workspaceId)
     }
 
@@ -176,7 +205,7 @@ export class AccessControlService {
   }
 
   async assertWorkspaceAccess(userId: string, workspaceId: string) {
-    const memberships = await userMembershipsCache.get(userId) || []
+    const memberships = (await userMembershipsCache.get(userId)) || []
     const membership = memberships.find((m) => m.workspaceId === workspaceId)
 
     if (!membership) {
@@ -192,10 +221,27 @@ export class AccessControlService {
   async assertWorkspaceManagementAccess(userId: string, workspaceId: string) {
     const membership = await this.assertWorkspaceAccess(userId, workspaceId)
 
-    if (!this.canManageWorkspace(membership.role)) {
+    if (!this.canManageWorkspaceRole(membership.role)) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "You do not have permission to manage this workspace.",
+      })
+    }
+
+    return membership
+  }
+
+  async assertWorkspaceTrackableManagementAccess(
+    userId: string,
+    workspaceId: string
+  ) {
+    const membership = await this.assertWorkspaceAccess(userId, workspaceId)
+
+    if (!this.canManageTrackableRole(membership.role)) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message:
+          "You do not have permission to create or manage trackables in this workspace.",
       })
     }
 

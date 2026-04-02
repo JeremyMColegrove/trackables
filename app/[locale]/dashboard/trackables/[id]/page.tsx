@@ -1,11 +1,11 @@
-import { TrackableOverviewSection } from "./trackable-overview-section"
+import { Suspense } from "react"
 
-export const dynamic = "force-dynamic"
-
-export function generateStaticParams() {
-  return []
-}
+import { TrackableOverviewEntry } from "./trackable-overview-entry"
 
 export default function TrackablePage() {
-  return <TrackableOverviewSection />
+  return (
+    <Suspense fallback={null}>
+      <TrackableOverviewEntry />
+    </Suspense>
+  )
 }

@@ -2,6 +2,7 @@ export * from "@/db/schema/_shared"
 export * from "@/db/schema/api-usage"
 export * from "@/db/schema/batch"
 export * from "@/db/schema/enums"
+export * from "@/db/schema/mcp-tokens"
 export * from "@/db/schema/subscriptions"
 export * from "@/db/schema/team"
 export * from "@/db/schema/trackables"
@@ -12,6 +13,7 @@ export * from "@/db/schema/webhooks"
 import { InferInsertModel, InferSelectModel } from "drizzle-orm"
 
 import { apiKeys, trackableApiUsageEvents } from "@/db/schema/api-usage"
+import { mcpAccessTokens } from "@/db/schema/mcp-tokens"
 import { batchJobLeases, batchJobs, batchJobRuns } from "@/db/schema/batch"
 import { workspaceSubscriptions } from "@/db/schema/subscriptions"
 import {
@@ -87,6 +89,9 @@ export type NewTrackableFormAnswer = InferInsertModel<
 
 export type ApiKey = InferSelectModel<typeof apiKeys>
 export type NewApiKey = InferInsertModel<typeof apiKeys>
+
+export type McpAccessToken = InferSelectModel<typeof mcpAccessTokens>
+export type NewMcpAccessToken = InferInsertModel<typeof mcpAccessTokens>
 
 export type TrackableApiUsageEvent = InferSelectModel<
   typeof trackableApiUsageEvents
