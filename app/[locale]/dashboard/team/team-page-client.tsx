@@ -4,7 +4,6 @@
 import { useWorkspaceContext } from "@/app/[locale]/dashboard/workspace-context-provider";
 import { WorkspaceTierDialog } from "@/app/[locale]/dashboard/workspace-tier-dialog";
 import { useAppSettings } from "@/components/app-settings-provider";
-import { RequireAuth } from "@/components/auth/require-auth";
 import { PageShell } from "@/components/page-shell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -70,23 +69,8 @@ function StatusDot({ tone }: { tone: "active" | "pending" }) {
 	);
 }
 
-function TeamPageSkeleton() {
-	return (
-		<main className="flex-1">
-			<div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-8 sm:px-8">
-				<Skeleton className="h-16 w-64" />
-				<Skeleton className="h-112 rounded-xl" />
-			</div>
-		</main>
-	);
-}
-
 export function TeamPageClient() {
-	return (
-		<RequireAuth fallback={<TeamPageSkeleton />}>
-			<TeamPageContent />
-		</RequireAuth>
-	);
+	return <TeamPageContent />;
 }
 
 function TeamPageContent() {

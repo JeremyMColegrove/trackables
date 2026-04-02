@@ -92,14 +92,37 @@ const ruleSchema = z
 		}
 	});
 
-const formSchema = z.object({
-	enabled: z.boolean(),
-	provider: z.enum(["generic", "discord"]),
-	url: z.string().url("Must be a valid URL"),
-	username: z.string().optional(),
-	secret: z.string().optional(),
-	triggerRules: z.array(ruleSchema).min(1, "At least one trigger is required"),
-});
+const formSchema = z
+	.object({
+		enabled: z.boolean(),
+		provider: z.enum(["generic", "discord"]),
+		url: z.string().trim(),
+		username: z.string().optional(),
+		secret: z.string().optional(),
+		triggerRules: z.array(ruleSchema).min(1, "At least one trigger is required"),
+	})
+	.superRefine((value, ctx) => {
+		if (!value.enabled) {
+			return;
+		}
+
+		if (value.url.length === 0) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Target URL is required",
+				path: ["url"],
+			});
+			return;
+		}
+
+		if (!z.url().safeParse(value.url).success) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Must be a valid URL",
+				path: ["url"],
+			});
+		}
+	});
 
 type FormData = z.infer<typeof formSchema>;
 type RuleData = z.infer<typeof ruleSchema>;
@@ -136,7 +159,7 @@ export function WebhookForm({
 					})),
 				}
 			: {
-					enabled: true,
+					enabled: false,
 					provider: providerOverride,
 					url: "",
 					username: "",
@@ -317,6 +340,7 @@ export function WebhookForm({
 	const isPending = saveMutation.isPending;
 	const isTesting = testMutation.isPending;
 	const isDirty = form.formState.isDirty;
+	const isEnabled = form.watch("enabled");
 
 	const watchUrl = form.watch("url");
 	const isDiscordUrlValid =
@@ -448,7 +472,17 @@ export function WebhookForm({
 													<div className="flex gap-2">
 														<div className="relative flex-1">
 															<FormControl>
-																<Input placeholder="https://..." {...field} />
+																<Input
+																	type="url"
+																	placeholder="https://..."
+																	autoComplete="off"
+																	inputMode="url"
+																	autoCapitalize="none"
+																	autoCorrect="off"
+																	spellCheck={false}
+																	data-form-type="other"
+																	{...field}
+																/>
 															</FormControl>
 														</div>
 													</div>
@@ -459,19 +493,28 @@ export function WebhookForm({
 									</div>
 
 									<div className="order-1 flex items-center justify-start pb-1 md:order-2 md:justify-center md:pb-2">
-										<div className="flex items-center space-x-2">
-											<Label
-												className="cursor-pointer text-sm font-medium"
-												htmlFor="enable-switch"
-											>
-												<T>Enable notifications</T>
-											</Label>
-											<Switch
-												id="enable-switch"
-												checked={form.watch("enabled")}
-												disabled={isPending || isTesting}
-												onCheckedChange={handleEnabledChange}
-											/>
+										<div className="flex flex-col items-start gap-1">
+											<p className="text-sm text-muted-foreground">
+												{isEnabled ? (
+													<T>Enabled</T>
+												) : (
+													<T>Not enabled</T>
+												)}
+											</p>
+											<div className="flex items-center space-x-2">
+												<Label
+													className="cursor-pointer text-sm font-medium"
+													htmlFor="enable-switch"
+												>
+													<T>Enable notifications</T>
+												</Label>
+												<Switch
+													id="enable-switch"
+													checked={isEnabled}
+													disabled={isPending || isTesting}
+													onCheckedChange={handleEnabledChange}
+												/>
+											</div>
 										</div>
 									</div>
 								</div>
@@ -486,7 +529,13 @@ export function WebhookForm({
 													<T>Signing Secret (Optional)</T>
 												</FormLabel>
 												<FormControl>
-													<Input type="password" placeholder="***" {...field} />
+													<Input
+														type="password"
+														placeholder="***"
+														autoComplete="new-password"
+														data-form-type="other"
+														{...field}
+													/>
 												</FormControl>
 												<FormDescription>
 													<T>Used to sign the payload request</T>

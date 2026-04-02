@@ -2,9 +2,10 @@
 
 import { UserButton, useUser } from "@clerk/nextjs"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { KeyRound, LoaderCircle, Shield } from "lucide-react"
+import { KeyRound, Shield } from "lucide-react"
 
 import { McpUserProfilePage } from "@/components/mcp-user-profile-page"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { useTRPC } from "@/trpc/client"
 import { T, useGT } from "gt-next"
@@ -32,6 +33,7 @@ export function UserAccountButton() {
 }
 
 function ProfilePrivacyPage() {
+  const gt = useGT()
   const { user } = useUser()
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -81,6 +83,9 @@ function ProfilePrivacyPage() {
     profilePrivacyQuery.data?.isProfilePrivate ??
     user?.publicMetadata?.isProfilePrivate === true
 
+  const isLoadingPrivacy =
+    profilePrivacyQuery.isLoading && !profilePrivacyQuery.data
+
   return (
     <div className="space-y-4">
       <div className="space-y-1">
@@ -92,32 +97,38 @@ function ProfilePrivacyPage() {
         </p>
       </div>
 
-      <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-foreground">
-            <T>Private profile</T>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            <T>When enabled, your profile is treated as private by the app.</T>
-          </p>
+      {isLoadingPrivacy ? (
+        <div
+          aria-label={gt("Loading privacy settings")}
+          className="rounded-lg border p-4"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-56" />
+            </div>
+            <Skeleton className="h-6 w-11 rounded-full" />
+          </div>
         </div>
-        <Switch
-          checked={isProfilePrivate}
-          disabled={
-            profilePrivacyQuery.isLoading || updateProfilePrivacy.isPending
-          }
-          onCheckedChange={(checked) =>
-            updateProfilePrivacy.mutate({ isProfilePrivate: checked })
-          }
-        />
-      </div>
-
-      {profilePrivacyQuery.isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <LoaderCircle className="size-4 animate-spin" />
-          <T>Loading privacy settings...</T>
+      ) : (
+        <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">
+              <T>Private profile</T>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              <T>When enabled, your profile is treated as private by the app.</T>
+            </p>
+          </div>
+          <Switch
+            checked={isProfilePrivate}
+            disabled={updateProfilePrivacy.isPending}
+            onCheckedChange={(checked) =>
+              updateProfilePrivacy.mutate({ isProfilePrivate: checked })
+            }
+          />
         </div>
-      ) : null}
+      )}
 
       {updateProfilePrivacy.error ? (
         <p className="text-sm text-destructive">

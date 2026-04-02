@@ -136,6 +136,7 @@ export const dashboardRouter = createTRPCRouter({
       recentLogsCount: recentUsageEvents.length,
       totalSubmissions,
       totalUsageTracks,
+      activityWindowStart: windowStart.toISOString(),
       submissionActivity,
       usageActivity,
     }

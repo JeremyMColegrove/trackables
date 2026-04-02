@@ -7,6 +7,10 @@ import {
 
 let isRedirectingForAuth = false
 
+export function resetAuthRedirectState() {
+  isRedirectingForAuth = false
+}
+
 function isUnauthorizedError(error: unknown) {
   if (!error || typeof error !== "object") {
     return false

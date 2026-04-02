@@ -5,7 +5,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Activity, Play, RefreshCcw } from "lucide-react"
 import { toast } from "sonner"
 
-import { RequireAuth } from "@/components/auth/require-auth"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { PageShell } from "@/components/page-shell"
@@ -66,11 +65,7 @@ export function BatchJobsPageSkeleton() {
 }
 
 export function BatchJobsPageClient() {
-  return (
-    <RequireAuth fallback={<BatchJobsPageSkeleton />}>
-      <BatchJobsPageContent />
-    </RequireAuth>
-  )
+  return <BatchJobsPageContent />
 }
 
 function BatchJobsPageContent() {

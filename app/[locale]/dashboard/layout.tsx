@@ -1,4 +1,6 @@
+import { auth } from "@clerk/nextjs/server"
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
 import { Suspense } from "react"
 
 import { createNoIndexMetadata } from "@/lib/seo"
@@ -16,6 +18,12 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
+  const { userId } = await auth()
+
+  if (!userId) {
+    redirect(`/sign-in?redirect_url=${encodeURIComponent("/dashboard")}`)
+  }
+
   return (
     <WorkspaceContextProvider>
       <Suspense fallback={<>{children}</>}>

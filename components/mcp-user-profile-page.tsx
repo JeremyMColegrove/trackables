@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
+/** biome-ignore-all lint/a11y/useAriaPropsSupportedByRole: <explanation> */
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatUserTimestamp } from "@/lib/date-time";
 import {
 	MCP_TOOL_DEFINITIONS,
@@ -118,6 +120,7 @@ export function McpUserProfilePage() {
 	}
 
 	const tokens = (tokensQuery.data ?? []) as McpTokenRow[];
+	const isLoadingTokens = tokensQuery.isLoading && !tokensQuery.data;
 
 	return (
 		<div className="space-y-6">
@@ -188,10 +191,9 @@ export function McpUserProfilePage() {
 				) : null}
 
 				{/* Token list */}
-				{tokensQuery.isLoading ? (
-					<div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
-						<LoaderCircle className="size-4 animate-spin" />
-						<T>Loading tokens...</T>
+				{isLoadingTokens ? (
+					<div aria-label={gt("Loading tokens...")} className="space-y-2">
+						<TokenCardSkeleton />
 					</div>
 				) : tokensQuery.error ? (
 					<p className="text-sm text-destructive">
@@ -217,9 +219,7 @@ export function McpUserProfilePage() {
 							<TokenCard
 								key={token.id}
 								token={token}
-								isRevoking={
-									revokeToken.isPending && tokenToRevoke === token.id
-								}
+								isRevoking={revokeToken.isPending && tokenToRevoke === token.id}
 								isConfirmingRevoke={tokenToRevoke === token.id}
 								onRevoke={() => setTokenToRevoke(token.id)}
 								onCancelRevoke={() => setTokenToRevoke(null)}
@@ -231,6 +231,30 @@ export function McpUserProfilePage() {
 						))}
 					</div>
 				)}
+			</div>
+		</div>
+	);
+}
+
+function TokenCardSkeleton() {
+	return (
+		<div className="rounded-xl border bg-background p-4">
+			<div className="flex items-start gap-3">
+				<Skeleton className="mt-1 size-2 rounded-full" />
+				<div className="min-w-0 flex-1 space-y-3">
+					<div className="flex flex-wrap items-center gap-2">
+						<Skeleton className="h-4 w-32" />
+						<Skeleton className="h-5 w-16 rounded-full" />
+						<Skeleton className="h-4 w-16" />
+					</div>
+					<Skeleton className="h-4 w-full max-w-72" />
+					<div className="flex flex-wrap gap-3">
+						<Skeleton className="h-4 w-20" />
+						<Skeleton className="h-4 w-28" />
+						<Skeleton className="h-4 w-24" />
+					</div>
+				</div>
+				<Skeleton className="size-8 rounded-md" />
 			</div>
 		</div>
 	);
@@ -291,7 +315,9 @@ function TokenCard({
 						</span>
 					</div>
 
-					<p className="truncate text-xs text-muted-foreground">{toolsSummary}</p>
+					<p className="truncate text-xs text-muted-foreground">
+						{toolsSummary}
+					</p>
 
 					<div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
 						{token.usageCount > 0 ? (
@@ -394,7 +420,10 @@ function CreateMcpTokenPanel({
 			selectedTools: [],
 		},
 	});
-	const allowAllTools = useWatch({ control: form.control, name: "allowAllTools" });
+	const allowAllTools = useWatch({
+		control: form.control,
+		name: "allowAllTools",
+	});
 
 	const createToken = useMutation(
 		trpc.mcp.createToken.mutationOptions({
@@ -602,9 +631,7 @@ function CreateMcpTokenPanel({
 															const nextValue =
 																checked === true
 																	? [...field.value, tool.name]
-																	: field.value.filter(
-																			(v) => v !== tool.name,
-																		);
+																	: field.value.filter((v) => v !== tool.name);
 															field.onChange(nextValue);
 														}}
 													/>

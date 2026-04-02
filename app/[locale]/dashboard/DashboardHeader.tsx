@@ -34,7 +34,11 @@ function isTopLevelDashboardPage({
 	pathname: string;
 	dashboardBaseHref: string;
 }) {
-	return pathname === dashboardBaseHref || pathname === `${dashboardBaseHref}/team`;
+	return (
+		pathname === dashboardBaseHref ||
+		pathname === `${dashboardBaseHref}/team` ||
+		pathname.startsWith(`${dashboardBaseHref}/internal/batch`)
+	);
 }
 
 export function DashboardHeader() {

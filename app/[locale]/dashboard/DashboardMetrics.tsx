@@ -26,6 +26,18 @@ type ActivityPoint = {
 	count: number;
 };
 
+type MetricsResponse = {
+	activeTrackablesCount: number;
+	trackablesCount: number;
+	activeSurveysCount: number;
+	recentLogsCount: number;
+	totalSubmissions: number;
+	totalUsageTracks: number;
+	activityWindowStart: string;
+	submissionActivity: ActivityPoint[];
+	usageActivity: ActivityPoint[];
+};
+
 const activityChartConfig = {
 	submissions: {
 		label: "Submissions",
@@ -37,23 +49,30 @@ const activityChartConfig = {
 	},
 } satisfies ChartConfig;
 
-const weekdayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
+const weekdayFormatter = new Intl.DateTimeFormat("en-US", {
+	weekday: "short",
+	timeZone: "UTC",
+});
 const tooltipDateFormatter = new Intl.DateTimeFormat("en-US", {
 	month: "short",
 	day: "numeric",
+	timeZone: "UTC",
 });
 
 function buildChartData(
+	windowStartIso: string | undefined,
 	submissionActivity: ActivityPoint[],
 	usageActivity: ActivityPoint[],
 ) {
-	const today = new Date();
+	if (!windowStartIso) {
+		return [];
+	}
+
+	const windowStart = new Date(windowStartIso);
 
 	return submissionActivity.map((point, index) => {
-		const date = new Date(today);
-		date.setDate(
-			today.getDate() - (submissionActivity.length - point.dayOffset - 1),
-		);
+		const date = new Date(windowStart);
+		date.setUTCDate(windowStart.getUTCDate() + point.dayOffset);
 
 		return {
 			label: weekdayFormatter.format(date),
@@ -66,11 +85,10 @@ function buildChartData(
 
 export function DashboardMetrics() {
 	const trpc = useTRPC();
-	const { data: metrics, isLoading } = useQuery(
-		trpc.dashboard.getMetrics.queryOptions(),
-	);
+	const { data: metrics, isLoading } = useQuery(trpc.dashboard.getMetrics.queryOptions());
 
 	const chartData = buildChartData(
+		metrics?.activityWindowStart,
 		metrics?.submissionActivity ?? [],
 		metrics?.usageActivity ?? [],
 	);

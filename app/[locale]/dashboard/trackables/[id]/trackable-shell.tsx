@@ -3,7 +3,6 @@
 import { WorkspaceTierDialog } from "@/app/[locale]/dashboard/workspace-tier-dialog"
 import { WorkspaceTierSection } from "@/app/[locale]/dashboard/workspace-tier-section"
 import { useAppSettings } from "@/components/app-settings-provider"
-import { RequireAuth } from "@/components/auth/require-auth"
 import { StatusPageCard } from "@/components/status-page-card"
 import { SidebarShell } from "@/components/sidebar-shell"
 import { Badge } from "@/components/ui/badge"
@@ -502,11 +501,9 @@ export function TrackableLayoutClient({
   const trackableId = params.id
 
   return (
-    <RequireAuth fallback={<TrackableShellSkeleton />}>
-      <TrackableLayoutContent trackableId={trackableId}>
-        {children}
-      </TrackableLayoutContent>
-    </RequireAuth>
+    <TrackableLayoutContent trackableId={trackableId}>
+      {children}
+    </TrackableLayoutContent>
   )
 }
 
