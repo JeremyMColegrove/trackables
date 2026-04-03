@@ -1,59 +1,92 @@
 # Trackables
 
-![Dashboard](<./images/README/dashboard.webp>)
+Trackables is an open source app for collecting structured responses and tracking API usage in one place.
 
-Trackables is a lightweight, self-hostable log and survey application.
+It is built for teams that want simple forms, event logging, and a self-hostable setup without a large amount of product overhead.
 
-It is built for simple data collection without unnecessary complexity. You can use it to share forms, collect structured responses, and track usage events through API keys.
+Hosted version: [trackables.org](https://trackables.org)
 
-Trackables is free, open source, and intended to stay small, understandable, and easy to run yourself.
+## What It Does
 
-Try out a hosted version [here](https://trackables.org).
+Trackables supports two main workflows:
 
-## Features
+- Form-based collection for feedback, surveys, and structured submissions
+- API-based event tracking with API keys, metadata, and history
 
-- Create simple trackable items for logs, feedback, and surveys
-- Share public or restricted forms
-- Collect structured responses
-- Track usage events through API keys
-- Review submissions and usage history in one place
-- Supports multiple languages
-- Self-host with Docker
-- Lightweight and simple by design
+## Big Features
 
-## Supported Languages
+### Forms and Responses
 
-Trackables currently supports English (`en`), Spanish (`es`), French (`fr`), Arabic (`ar`), Portuguese (`pt`), Chinese, Simplified (`zh-CN`), Hindi (`hi`), German (`de`), Japanese (`ja`), Indonesian (`id`), Russian (`ru`), Korean (`ko`), Turkish (`tr`), Italian (`it`), Dutch (`nl`), Polish (`pl`), and Vietnamese (`vi`).
+- Create trackable forms for feedback, surveys, and intake flows
+- Build forms from reusable field types like ratings, checkboxes, notes, and short text
+- Share forms publicly or keep them restricted
+- Allow anonymous responses when needed
+- Review submitted responses inside the dashboard
 
-## Team Collaboration & Permissions
+### API Usage Tracking
 
-- Organize trackables inside shared workspaces and invite teammates.
-- Use workspace roles for access control: owner, admin, member, and viewer.
+- Create API ingestion trackables for logs and usage events
+- Generate API keys for authenticated workspaces
+- Store both aggregate counts and individual events
+- Attach metadata to events for filtering and later analysis
+- Explore usage history from the dashboard
 
-## Example Use Cases
+### Sharing and Access
 
-- Public feedback forms
+- Organize trackables inside workspaces
+- Invite teammates and manage access with workspace roles
+- Support public access, private access, and more controlled sharing flows
+
+### Operations and Integrations
+
+- Query logged events with filtering and grouping support
+- Configure webhooks for trackable events
+- Use the built-in MCP tooling for agent workflows
+- Run the app in multiple languages
+
+## Good Fit For
+
+- Feedback forms
 - Survey collection
-- Simple event or usage logging
-- Shared intake forms
-- Personal or team-hosted tracking tools
+- Shared internal intake forms
+- Lightweight event or log tracking
+- Small teams that want to self-host their own data collection tools
 
-### Getting Started
+## Stack
 
-The recommended way to run the application is through docker. We provide an example docker-compose and .env for you.
+- Next.js
+- TypeScript
+- tRPC
+- PostgreSQL
+- Redis
+- Tailwind CSS
+- Clerk for authentication
 
-See the example [docker-compose.yml](./example/docker-compose.yml) and [.env.example](./example/.env.example) file to get started.
+## Self-Hosting
 
-## Screenshots
+Trackables can be self-hosted with Docker. The repository includes working example files to get started:
 
-![Public survey form](<./images/README/public-survey.webp>)
-![Log ingestion](<./images/README/log-overview.webp>)
-![Log details](<./images/README/log-details.webp>)
+- [example/docker-compose.yml](/Users/jeremy/Documents/Github/trackables/example/docker-compose.yml)
+- [example/.env.example](/Users/jeremy/Documents/Github/trackables/example/.env.example)
 
-Log querying uses the Liqe syntax, and enables other filtering options such as grouping and time selection.
+### Requirements
+
+- Docker and Docker Compose
+- PostgreSQL
+- Redis
+- A Clerk application for authentication
+
+### Basic Setup
+
+1. Copy [example/.env.example](/Users/jeremy/Documents/Github/trackables/example/.env.example) to `.env` and fill in your values.
+2. Create a Clerk app and add your publishable key, secret key, and webhook signing secret.
+3. Create a Clerk webhook pointing to `https://<your-domain>/api/clerk/webhook`.
+4. Subscribe that webhook to `user.created`, `user.updated`, and `user.deleted`.
+5. Copy [example/docker-compose.yml](/Users/jeremy/Documents/Github/trackables/example/docker-compose.yml) into your deployment directory.
+6. Start the stack with `docker compose up -d`.
+
+After startup, open your app URL and sign in. Clerk handles authentication, while Trackables stores its app data in PostgreSQL and uses Redis for caching and queued work.
 
 ## Contributing
 
-Contributions are welcome.
-
-If you want to improve Trackables, open an issue, start a discussion, or submit a pull request. Small fixes, documentation updates, and feature contributions are all welcome.
+Contributions are welcome. If you want to improve Trackables, open an issue or submit a pull request.
