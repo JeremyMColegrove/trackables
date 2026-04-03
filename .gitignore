@@ -7,7 +7,7 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
+.data/**/*
 # testing
 /coverage
 
@@ -48,3 +48,4 @@ next-env.d.ts
 /.clerk/
 .env.production
 .env.production
+.data/
