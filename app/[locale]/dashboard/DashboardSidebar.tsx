@@ -28,7 +28,7 @@ import * as React from "react";
 
 export function DashboardSidebar() {
 	const { subscriptionsEnabled } = useAppSettings();
-	const { currentTier, hasAdminControls } = useWorkspaceContext();
+	const { currentTier, hasAdminControls, activeWorkspace } = useWorkspaceContext();
 	const trpc = useTRPC();
 	const pathname = usePathname();
 	const { setOpenMobile } = useSidebar();
@@ -91,6 +91,7 @@ export function DashboardSidebar() {
 			{subscriptionsEnabled ? (
 				<WorkspaceTierDialog
 					currentTier={dialogTier}
+					workspaceId={activeWorkspace?.id ?? ""}
 					open={tierDialogOpen}
 					onOpenChange={setTierDialogOpen}
 				/>

@@ -19,7 +19,7 @@ export function WorkspaceTierSection({
 	if (isLoading) return null;
 
 	const plan = getWorkspaceTierPlan(currentTier);
-	const isHighestTier = currentTier === "pro";
+	const isProTier = currentTier === "pro";
 
 	const handleOpenDialog = () => {
 		onOpenDialog(currentTier);
@@ -28,6 +28,7 @@ export function WorkspaceTierSection({
 
 	return (
 		<button
+			type="button"
 			onClick={handleOpenDialog}
 			className={cn(
 				"flex w-full items-center justify-between gap-3 rounded-lg p-2 text-left text-sm transition-colors hover:bg-sidebar-accent group",
@@ -45,7 +46,7 @@ export function WorkspaceTierSection({
 			</div>
 
 			<span className="text-xs font-semibold opacity-60 hover:opacity-100 transition-colors pr-1">
-				{!isHighestTier ? <T>Manage</T> : <T>Upgrade</T>}
+				{isProTier ? <T>View</T> : <T>Upgrade</T>}
 			</span>
 		</button>
 	);

@@ -251,7 +251,7 @@ export function CreateTrackableDialog() {
 	const router = useRouter();
 	const queryClient = useQueryClient();
 	const { subscriptionsEnabled } = useAppSettings();
-	const { currentTier, isLoading: isWorkspaceContextLoading } =
+	const { currentTier, isLoading: isWorkspaceContextLoading, activeWorkspace } =
 		useWorkspaceContext();
 	const metrics = useQuery(trpc.dashboard.getMetrics.queryOptions());
 	const maxTrackableItems = getTierLimits(currentTier).maxTrackableItems;
@@ -377,6 +377,7 @@ export function CreateTrackableDialog() {
 			{subscriptionsEnabled ? (
 				<WorkspaceTierDialog
 					currentTier={currentTier}
+					workspaceId={activeWorkspace?.id ?? ""}
 					open={tierDialogOpen}
 					onOpenChange={setTierDialogOpen}
 				/>

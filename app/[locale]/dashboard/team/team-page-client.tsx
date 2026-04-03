@@ -77,7 +77,7 @@ function TeamPageContent() {
 	const gt = useGT();
 	const { user } = useUser();
 	const { subscriptionsEnabled } = useAppSettings();
-	const { currentTier, isLoading: isWorkspaceContextLoading } =
+	const { currentTier, isLoading: isWorkspaceContextLoading, activeWorkspace } =
 		useWorkspaceContext();
 	const [memberToRemove, setMemberToRemove] = useState<TeamMemberRow | null>(
 		null,
@@ -609,6 +609,7 @@ function TeamPageContent() {
 			{subscriptionsEnabled ? (
 				<WorkspaceTierDialog
 					currentTier={currentTier as SubscriptionTier}
+					workspaceId={activeWorkspace?.id ?? ""}
 					open={tierDialogOpen}
 					onOpenChange={setTierDialogOpen}
 				/>

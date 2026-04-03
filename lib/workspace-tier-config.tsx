@@ -1,9 +1,9 @@
-import type { SubscriptionTier, TierLimits } from "@/server/subscriptions/types"
 import {
   getLimitsForTier,
   getSubscriptionPlan,
   resolveTierFromVariantId,
 } from "@/lib/subscription-plans"
+import type { SubscriptionTier, TierLimits } from "@/server/subscriptions/types"
 
 export interface WorkspaceTierPlan {
   tier: SubscriptionTier
@@ -21,7 +21,7 @@ export interface WorkspaceTierPlan {
   tone: "neutral" | "accent" | "strong"
 }
 
-export const WORKSPACE_BILLING_ENABLED = false
+export const WORKSPACE_BILLING_ENABLED = true
 
 function formatUsageLimit(
   value: number | null,

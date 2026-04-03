@@ -16,10 +16,19 @@ import {
 	getWorkspaceTierPlans,
 	WORKSPACE_BILLING_ENABLED,
 } from "@/lib/workspace-tier-config";
+import { getSubscriptionPlan, resolveTierFromVariantId } from "@/lib/subscription-plans";
 import type { SubscriptionTier } from "@/server/subscriptions/types";
+import { useTRPC } from "@/trpc/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { T } from "gt-next";
-import { CheckIcon, SparklesIcon } from "lucide-react";
+import { CheckIcon, Loader2Icon, SparklesIcon } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+	BillingSuccessModal,
+	type BillingSuccessScenario,
+} from "@/app/[locale]/dashboard/billing-success-modal";
 
 function getPlanCtaLabel(
 	tier: SubscriptionTier,
@@ -29,21 +38,82 @@ function getPlanCtaLabel(
 		return <T>Manage</T>;
 	}
 
-	return <T>Switch</T>;
+	const targetRank = getSubscriptionPlan(tier).rank;
+	const currentRank = getSubscriptionPlan(currentTier).rank;
+
+	return targetRank > currentRank ? <T>Upgrade</T> : <T>Downgrade</T>;
 }
 
 export function WorkspaceTierDialog({
 	currentTier,
+	workspaceId,
+	initialTier,
 	open,
 	onOpenChange,
 }: {
 	currentTier: SubscriptionTier;
+	workspaceId: string;
+	initialTier?: SubscriptionTier;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
 	const plans = getWorkspaceTierPlans();
 	const currentPlan = getWorkspaceTierPlan(currentTier);
 	const freePlan = getWorkspaceTierPlan("free");
+	const mostPopularPlan = plans.find((plan) => plan.mostPopular) ?? null;
+	const isCurrentTierAboveMostPopular =
+		mostPopularPlan !== null && currentPlan.rank > mostPopularPlan.rank;
+	const highlightedTier =
+		isCurrentTierAboveMostPopular
+			? currentTier
+			: mostPopularPlan?.tier ?? currentTier;
+	const [loadingVariantId, setLoadingVariantId] = useState<string | null>(null);
+	const [successScenario, setSuccessScenario] =
+		useState<BillingSuccessScenario | null>(null);
+	const queryClient = useQueryClient();
+	const trpc = useTRPC();
+
+	async function handleCheckout(variantId: string) {
+		setLoadingVariantId(variantId);
+		try {
+			const res = await fetch("/api/billing/checkout", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ variantId, workspaceId }),
+			});
+			const data = await res.json();
+			if (!res.ok) {
+				toast.error(data.error ?? "Failed to update plan. Please try again.");
+				return;
+			}
+			if (data.switched) {
+				const toTier = resolveTierFromVariantId(variantId);
+				await queryClient.invalidateQueries(
+					trpc.account.getWorkspaceContext.queryFilter(),
+				);
+				onOpenChange(false);
+				if (toTier) {
+					const fromRank = getSubscriptionPlan(currentTier).rank;
+					const toRank = getSubscriptionPlan(toTier).rank;
+					setSuccessScenario(
+						toRank > fromRank
+							? { type: "upgrade", fromTier: currentTier, toTier }
+							: { type: "downgrade", fromTier: currentTier, toTier },
+					);
+				}
+				return;
+			}
+			if (data.url) {
+				window.location.href = data.url;
+				return;
+			}
+			toast.error("Failed to update plan. Please try again.");
+		} catch {
+			toast.error("Failed to update plan. Please try again.");
+		} finally {
+			setLoadingVariantId(null);
+		}
+	}
 
 	if (!WORKSPACE_BILLING_ENABLED) {
 		return (
@@ -164,6 +234,7 @@ export function WorkspaceTierDialog({
 	}
 
 	return (
+		<>
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-h-[90vh] overflow-y-auto border-none p-0 shadow-2xl sm:max-w-4xl sm:rounded-2xl">
 				<div className="bg-linear-to-br from-indigo-600 via-purple-600 to-pink-500 px-6 py-3 text-center sm:px-8 sm:py-4">
@@ -186,8 +257,19 @@ export function WorkspaceTierDialog({
 						const tier = plan.tier;
 						const isCurrent = tier === currentTier;
 						const isMostPopular = plan.mostPopular;
-						const ctaHref = isCurrent ? currentPlan.manageUrl : plan.switchUrl;
-						const ctaDisabled = !ctaHref;
+						const isHighlighted = tier === highlightedTier;
+						const showMostPopularBadge =
+							isMostPopular &&
+							!isCurrent &&
+							!isCurrentTierAboveMostPopular;
+						const isFree = tier === "free";
+						const isPreSelected =
+							initialTier !== undefined && tier === initialTier && !isCurrent;
+						const isLoadingThisPlan =
+							!isFree &&
+							plan.lemonSqueezyVariantId !== null &&
+							loadingVariantId === plan.lemonSqueezyVariantId;
+						const isAnyLoading = loadingVariantId !== null;
 						const ctaLabel = getPlanCtaLabel(tier, currentTier);
 
 						return (
@@ -195,22 +277,23 @@ export function WorkspaceTierDialog({
 								key={tier}
 								className={cn(
 									"relative flex flex-col rounded-2xl border bg-background p-4 shadow-sm transition-all duration-200 hover:shadow-md sm:p-5",
-									isMostPopular
+									isHighlighted
 										? "z-10 mt-3 border-primary/40 bg-linear-to-b from-background to-primary/2 ring-1 shadow-primary/5 ring-primary/5 sm:mt-0 sm:scale-[1.02]"
 										: "border-border/70",
-									isCurrent && !isMostPopular
+									isCurrent && !isHighlighted
 										? "border-border bg-muted/20"
 										: "",
+									isPreSelected ? "ring-2 ring-primary shadow-primary/20" : "",
 								)}
 							>
-								{(isCurrent || isMostPopular) && (
+								{(isCurrent || showMostPopularBadge) && (
 									<div className="absolute -top-3 left-1/2 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 sm:flex-row">
 										{isCurrent ? (
 											<Badge className="h-auto rounded-full bg-emerald-600 px-3 py-1 text-[10px] font-bold tracking-wider text-white uppercase shadow-sm hover:bg-emerald-600">
 												<T>Current Plan</T>
 											</Badge>
 										) : null}
-										{isMostPopular ? (
+										{showMostPopularBadge ? (
 											<Badge className="h-auto rounded-full bg-primary px-3 py-1 text-[10px] font-bold tracking-wider text-primary-foreground uppercase shadow-sm hover:bg-primary">
 												<T>Best Seller</T>
 											</Badge>
@@ -245,7 +328,7 @@ export function WorkspaceTierDialog({
 											<CheckIcon
 												className={cn(
 													"mt-0.5 size-3.5 shrink-0 sm:size-4",
-													isMostPopular
+													isHighlighted
 														? "text-primary"
 														: "text-muted-foreground/60",
 												)}
@@ -255,51 +338,63 @@ export function WorkspaceTierDialog({
 									))}
 								</ul>
 
-								<Button
-									asChild={!ctaDisabled}
-									size="lg"
-									variant={
-										isCurrent
-											? "outline"
-											: isMostPopular
-												? "default"
-												: "secondary"
-									}
-									className={cn(
-										"mt-auto w-full rounded-xl font-semibold transition-transform active:scale-[0.98]",
-										isMostPopular && !isCurrent
-											? "bg-primary shadow-md hover:bg-primary/90 hover:shadow-lg"
-											: "",
-										isCurrent ? "border-foreground/10 text-foreground/70" : "",
-									)}
-									disabled={ctaDisabled}
-								>
-									{ctaHref ? (
+								{isFree ? null : isCurrent ? (
+									<Button
+										asChild
+										size="lg"
+										variant="outline"
+										className="mt-auto w-full rounded-xl border-foreground/10 font-semibold text-foreground/70"
+									>
 										<Link
-											href={ctaHref}
+											href={currentPlan.manageUrl ?? "https://store.trackables.org/billing"}
 											target="_blank"
 											rel="noreferrer"
 											onClick={() => onOpenChange(false)}
 										>
-											{isMostPopular && !isCurrent ? (
-												<SparklesIcon className="mr-2 size-4 fill-primary-foreground/30" />
-											) : null}
 											{ctaLabel}
 										</Link>
-									) : (
-										<>
-											{isMostPopular && !isCurrent ? (
-												<SparklesIcon className="mr-2 size-4 fill-primary-foreground/30" />
-											) : null}
-											{ctaLabel}
-										</>
-									)}
-								</Button>
+									</Button>
+								) : (
+									<Button
+										type="button"
+										size="lg"
+										variant={isHighlighted ? "default" : "secondary"}
+										className={cn(
+											"mt-auto w-full rounded-xl font-semibold transition-transform active:scale-[0.98]",
+											isHighlighted
+												? "bg-primary shadow-md hover:bg-primary/90 hover:shadow-lg"
+												: "",
+										)}
+										disabled={isAnyLoading || !plan.lemonSqueezyVariantId}
+										onClick={() =>
+											plan.lemonSqueezyVariantId &&
+											handleCheckout(plan.lemonSqueezyVariantId)
+										}
+									>
+										{isLoadingThisPlan ? (
+											<Loader2Icon className="mr-2 size-4 animate-spin" />
+										) : isHighlighted ? (
+											<SparklesIcon className="mr-2 size-4 fill-primary-foreground/30" />
+										) : null}
+										{ctaLabel}
+									</Button>
+								)}
 							</div>
 						);
 					})}
 				</div>
 			</DialogContent>
 		</Dialog>
+
+		{successScenario && (
+			<BillingSuccessModal
+				open={!!successScenario}
+				onOpenChange={(open) => {
+					if (!open) setSuccessScenario(null);
+				}}
+				scenario={successScenario}
+			/>
+		)}
+	</>
 	);
 }

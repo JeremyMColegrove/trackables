@@ -2,6 +2,7 @@
 
 import { WorkspaceTierDialog } from "@/app/[locale]/dashboard/workspace-tier-dialog"
 import { WorkspaceTierSection } from "@/app/[locale]/dashboard/workspace-tier-section"
+import { useWorkspaceContext } from "@/app/[locale]/dashboard/workspace-context-provider"
 import { useAppSettings } from "@/components/app-settings-provider"
 import { StatusPageCard } from "@/components/status-page-card"
 import { SidebarShell } from "@/components/sidebar-shell"
@@ -259,6 +260,7 @@ function TrackableShellError({
 
 function TrackableSidebarNav({ trackable }: { trackable: TrackableDetails }) {
   const { subscriptionsEnabled } = useAppSettings()
+  const { activeWorkspace } = useWorkspaceContext()
   const gt = useGT()
   const locale = useLocale()
   const pathname = usePathname()
@@ -363,6 +365,7 @@ function TrackableSidebarNav({ trackable }: { trackable: TrackableDetails }) {
       {subscriptionsEnabled ? (
         <WorkspaceTierDialog
           currentTier={dialogTier}
+          workspaceId={activeWorkspace?.id ?? ""}
           open={tierDialogOpen}
           onOpenChange={setTierDialogOpen}
         />

@@ -15,6 +15,9 @@ import { FormCreationTool } from "@/server/mcp/tools/form-creation.tool"
 import { FormSharingTool } from "@/server/mcp/tools/form-sharing.tool"
 import { ResponseListTool } from "@/server/mcp/tools/response-list.tool"
 import { ResponseDetailTool } from "@/server/mcp/tools/response-detail.tool"
+import { ApiKeyListTool } from "@/server/mcp/tools/api-key-list.tool"
+import { ApiKeyCreateTool } from "@/server/mcp/tools/api-key-create.tool"
+import { ApiKeyRevokeTool } from "@/server/mcp/tools/api-key-revoke.tool"
 
 /** All available MCP tool instances, constructed once at module load. */
 const allTools = [
@@ -28,6 +31,9 @@ const allTools = [
   new FormSharingTool(),
   new ResponseListTool(),
   new ResponseDetailTool(),
+  new ApiKeyListTool(),
+  new ApiKeyCreateTool(),
+  new ApiKeyRevokeTool(),
 ]
 
 /**

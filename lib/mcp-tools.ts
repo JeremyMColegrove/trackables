@@ -9,6 +9,9 @@ export const MCP_TOOL_NAMES = [
   "update_form_sharing",
   "list_responses",
   "get_response",
+  "list_api_keys",
+  "create_api_key",
+  "revoke_api_key",
 ] as const
 
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number]
@@ -68,6 +71,21 @@ export const MCP_TOOL_DEFINITIONS = [
     name: "get_response",
     label: "Get response details",
     description: "Inspect an individual response in detail.",
+  },
+  {
+    name: "list_api_keys",
+    label: "List API keys",
+    description: "List API keys for an api_ingestion trackable.",
+  },
+  {
+    name: "create_api_key",
+    label: "Create API key",
+    description: "Create a new API key for an api_ingestion trackable.",
+  },
+  {
+    name: "revoke_api_key",
+    label: "Revoke API key",
+    description: "Revoke an API key for an api_ingestion trackable.",
   },
 ] as const satisfies readonly {
   name: McpToolName
