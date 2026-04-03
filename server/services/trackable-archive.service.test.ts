@@ -1,18 +1,38 @@
 import assert from "node:assert/strict"
-import test, { mock } from "node:test"
+import test, { before, mock } from "node:test"
 
 import { TRPCError } from "@trpc/server"
 
-import { db } from "@/db"
-import {
-  accessControlService,
-  AccessControlService,
-} from "@/server/services/access-control.service"
-import {
-  TrackableMutationService,
-  assertTrackableArchiveConfirmation,
+import type { db as DbType } from "@/db"
+import type { AccessControlService as AccessControlServiceType } from "@/server/services/access-control.service"
+import type { accessControlService as AccessControlServiceSingletonType } from "@/server/services/access-control.service"
+import type {
+  TrackableMutationService as TrackableMutationServiceType,
+  assertTrackableArchiveConfirmation as AssertFnType,
 } from "@/server/services/trackable-mutation.service"
-import { TrackableQueryService } from "@/server/services/trackable-query.service"
+import type { TrackableQueryService as TrackableQueryServiceType } from "@/server/services/trackable-query.service"
+import { registerServerOnlyMock } from "@/support/module-mocks/register-module-mocks"
+
+registerServerOnlyMock()
+
+let db: typeof DbType
+let accessControlService: typeof AccessControlServiceSingletonType
+let AccessControlService: typeof AccessControlServiceType
+let TrackableMutationService: typeof TrackableMutationServiceType
+let assertTrackableArchiveConfirmation: typeof AssertFnType
+let TrackableQueryService: typeof TrackableQueryServiceType
+
+before(async () => {
+  ;({ db } = await import("@/db"))
+  ;({ accessControlService, AccessControlService } = await import(
+    "@/server/services/access-control.service"
+  ))
+  ;({ TrackableMutationService, assertTrackableArchiveConfirmation } =
+    await import("@/server/services/trackable-mutation.service"))
+  ;({ TrackableQueryService } = await import(
+    "@/server/services/trackable-query.service"
+  ))
+})
 
 test("assertTrackableArchiveConfirmation rejects a mismatched confirmation name", () => {
   assert.throws(

@@ -67,7 +67,7 @@ test("sync creates the initial local subscription from fresh Lemon Squeezy data"
     createSubscriptionApiResponse({
       subscriptionId: "sub_123",
       customerId: "cus_123",
-      variantId: "12345",
+      variantId: "1482028",
       status: "active",
       renewsAt: "2026-05-01T00:00:00.000Z",
     })
@@ -86,7 +86,7 @@ test("sync creates the initial local subscription from fresh Lemon Squeezy data"
     workspaceId: "workspace-123",
     lemonSqueezySubscriptionId: "sub_123",
     lemonSqueezyCustomerId: "cus_123",
-    variantId: "12345",
+    variantId: "1482028",
     tier: "plus",
     status: "active",
     currentPeriodEnd: new Date("2026-05-01T00:00:00.000Z"),
@@ -102,7 +102,7 @@ test("sync updates stale local data with fresh upstream state", async () => {
     createSubscriptionApiResponse({
       subscriptionId: "sub_456",
       customerId: "cus_456",
-      variantId: "67890",
+      variantId: "1482029",
       status: "active",
       renewsAt: "2026-06-01T00:00:00.000Z",
     })
@@ -112,7 +112,7 @@ test("sync updates stale local data with fresh upstream state", async () => {
     workspaceId: "workspace-456",
     lemonSqueezySubscriptionId: "sub_456",
     lemonSqueezyCustomerId: "cus_old",
-    variantId: "12345",
+    variantId: "1482028",
     tier: "plus",
     status: "past_due",
     currentPeriodEnd: new Date("2026-04-01T00:00:00.000Z"),
@@ -127,7 +127,7 @@ test("sync updates stale local data with fresh upstream state", async () => {
     workspaceId: "workspace-456",
     lemonSqueezySubscriptionId: "sub_456",
     lemonSqueezyCustomerId: "cus_456",
-    variantId: "67890",
+    variantId: "1482029",
     tier: "pro",
     status: "active",
     currentPeriodEnd: new Date("2026-06-01T00:00:00.000Z"),
@@ -139,7 +139,7 @@ test("sync persists cancelled subscriptions", async () => {
     createSubscriptionApiResponse({
       subscriptionId: "sub_cancelled",
       customerId: "cus_cancelled",
-      variantId: "12345",
+      variantId: "1482028",
       status: "cancelled",
       endsAt: "2026-05-15T00:00:00.000Z",
     })
@@ -154,7 +154,7 @@ test("sync persists cancelled subscriptions", async () => {
     workspaceId: "workspace-cancelled",
     lemonSqueezySubscriptionId: "sub_cancelled",
     lemonSqueezyCustomerId: "cus_cancelled",
-    variantId: "12345",
+    variantId: "1482028",
     tier: "plus",
     status: "cancelled",
     currentPeriodEnd: new Date("2026-05-15T00:00:00.000Z"),
@@ -166,7 +166,7 @@ test("sync persists expired subscriptions as inactive local state", async () => 
     createSubscriptionApiResponse({
       subscriptionId: "sub_expired",
       customerId: "cus_expired",
-      variantId: "67890",
+      variantId: "1482029",
       status: "expired",
       endsAt: "2026-05-20T00:00:00.000Z",
     })
@@ -188,7 +188,7 @@ test("sync updates the stored tier when the Lemon Squeezy plan changes", async (
     createSubscriptionApiResponse({
       subscriptionId: "sub_plan_change",
       customerId: "cus_plan_change",
-      variantId: "67890",
+      variantId: "1482029",
       status: "active",
       renewsAt: "2026-07-01T00:00:00.000Z",
     })
@@ -198,7 +198,7 @@ test("sync updates the stored tier when the Lemon Squeezy plan changes", async (
     workspaceId: "workspace-plan-change",
     lemonSqueezySubscriptionId: "sub_plan_change",
     lemonSqueezyCustomerId: "cus_plan_change",
-    variantId: "12345",
+    variantId: "1482028",
     tier: "plus",
     status: "active",
     currentPeriodEnd: new Date("2026-06-01T00:00:00.000Z"),
@@ -210,7 +210,7 @@ test("sync updates the stored tier when the Lemon Squeezy plan changes", async (
   })
 
   assert.equal(subscription.tier, "pro")
-  assert.equal(subscription.variantId, "67890")
+  assert.equal(subscription.variantId, "1482029")
 })
 
 test("sync is idempotent for repeated webhook-driven refreshes", async () => {
@@ -218,7 +218,7 @@ test("sync is idempotent for repeated webhook-driven refreshes", async () => {
     createSubscriptionApiResponse({
       subscriptionId: "sub_repeat",
       customerId: "cus_repeat",
-      variantId: "12345",
+      variantId: "1482028",
       status: "active",
       renewsAt: "2026-08-01T00:00:00.000Z",
     })
@@ -255,7 +255,7 @@ test("sync rejects unknown variants and keeps the current local row unchanged", 
     workspaceId: "workspace-unknown",
     lemonSqueezySubscriptionId: "sub_unknown",
     lemonSqueezyCustomerId: "cus_existing",
-    variantId: "12345",
+    variantId: "1482028",
     tier: "plus",
     status: "active",
     currentPeriodEnd: new Date("2026-04-01T00:00:00.000Z"),

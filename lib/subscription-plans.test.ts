@@ -28,7 +28,10 @@ test("paid tiers keep higher API usage limits than free", () => {
     plusLimits.maxApiLogsPerMinute! > freeLimits.maxApiLogsPerMinute!,
     true
   )
-  assert.equal(proLimits.maxApiPayloadBytes, null)
+  assert.equal(
+    proLimits.maxApiPayloadBytes! > plusLimits.maxApiPayloadBytes!,
+    true
+  )
   assert.equal(
     proLimits.maxApiLogsPerMinute! > plusLimits.maxApiLogsPerMinute!,
     true
