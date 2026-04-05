@@ -1,7 +1,7 @@
 "use client"
 
-import dashboardDarkImage from "@/images/dashboard-dark.webp"
-import dashboardLightImage from "@/images/dashboard-light.webp"
+import dashboardDarkImage from "@/images/dashboard-dark_hd.webp"
+import dashboardLightImage from "@/images/dashboard-light_hd.webp"
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import { useEffect, useState } from "react"
